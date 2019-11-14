@@ -21,7 +21,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/XiaoMi/soar/common"
+	"github.com/sjatsh/soar/common"
 
 	json "github.com/CorgiMan/json2"
 	"github.com/kr/pretty"
