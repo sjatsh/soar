@@ -101,7 +101,7 @@ func TestRuleImplicitConversion(t *testing.T) {
 	for _, sql := range sqls[0] {
 		stmt, syntaxErr := sqlparser.Parse(sql)
 		if syntaxErr != nil {
-			common.Log.Critical("Syntax Error: %v, SQL: %s", syntaxErr, sql)
+			common.Log.Warn("Syntax Error: %v, SQL: %s", syntaxErr, sql)
 		}
 
 		q := &Query4Audit{Query: sql, Stmt: stmt}
@@ -121,7 +121,7 @@ func TestRuleImplicitConversion(t *testing.T) {
 	for _, sql := range sqls[1] {
 		stmt, syntaxErr := sqlparser.Parse(sql)
 		if syntaxErr != nil {
-			common.Log.Critical("Syntax Error: %v, SQL: %s", syntaxErr, sql)
+			common.Log.Warn("Syntax Error: %v, SQL: %s", syntaxErr, sql)
 		}
 
 		q := &Query4Audit{Query: sql, Stmt: stmt}
@@ -156,7 +156,7 @@ func TestRuleImpossibleOuterJoin(t *testing.T) {
 	for _, sql := range sqls {
 		stmt, syntaxErr := sqlparser.Parse(sql)
 		if syntaxErr != nil {
-			common.Log.Critical("Syntax Error: %v, SQL: %s", syntaxErr, sql)
+			common.Log.Warn("Syntax Error: %v, SQL: %s", syntaxErr, sql)
 		}
 
 		q := &Query4Audit{Query: sql, Stmt: stmt}
@@ -195,7 +195,7 @@ func TestIndexAdvisorRuleGroupByConst(t *testing.T) {
 	for _, sql := range sqls[0] {
 		stmt, syntaxErr := sqlparser.Parse(sql)
 		if syntaxErr != nil {
-			common.Log.Critical("Syntax Error: %v, SQL: %s", syntaxErr, sql)
+			common.Log.Warn("Syntax Error: %v, SQL: %s", syntaxErr, sql)
 		}
 
 		q := &Query4Audit{Query: sql, Stmt: stmt}
@@ -218,7 +218,7 @@ func TestIndexAdvisorRuleGroupByConst(t *testing.T) {
 	for _, sql := range sqls[1] {
 		stmt, syntaxErr := sqlparser.Parse(sql)
 		if syntaxErr != nil {
-			common.Log.Critical("Syntax Error: %v, SQL: %s", syntaxErr, sql)
+			common.Log.Warn("Syntax Error: %v, SQL: %s", syntaxErr, sql)
 		}
 
 		q := &Query4Audit{Query: sql, Stmt: stmt}
@@ -257,7 +257,7 @@ func TestIndexAdvisorRuleOrderByConst(t *testing.T) {
 	for _, sql := range sqls[0] {
 		stmt, syntaxErr := sqlparser.Parse(sql)
 		if syntaxErr != nil {
-			common.Log.Critical("Syntax Error: %v, SQL: %s", syntaxErr, sql)
+			common.Log.Warn("Syntax Error: %v, SQL: %s", syntaxErr, sql)
 		}
 
 		q := &Query4Audit{Query: sql, Stmt: stmt}
@@ -280,7 +280,7 @@ func TestIndexAdvisorRuleOrderByConst(t *testing.T) {
 	for _, sql := range sqls[1] {
 		stmt, syntaxErr := sqlparser.Parse(sql)
 		if syntaxErr != nil {
-			common.Log.Critical("Syntax Error: %v, SQL: %s", syntaxErr, sql)
+			common.Log.Warn("Syntax Error: %v, SQL: %s", syntaxErr, sql)
 		}
 
 		q := &Query4Audit{Query: sql, Stmt: stmt}
@@ -318,7 +318,7 @@ func TestRuleUpdatePrimaryKey(t *testing.T) {
 	for _, sql := range sqls[0] {
 		stmt, syntaxErr := sqlparser.Parse(sql)
 		if syntaxErr != nil {
-			common.Log.Critical("Syntax Error: %v, SQL: %s", syntaxErr, sql)
+			common.Log.Warn("Syntax Error: %v, SQL: %s", syntaxErr, sql)
 		}
 
 		q := &Query4Audit{Query: sql, Stmt: stmt}
@@ -341,7 +341,7 @@ func TestRuleUpdatePrimaryKey(t *testing.T) {
 	for _, sql := range sqls[1] {
 		stmt, syntaxErr := sqlparser.Parse(sql)
 		if syntaxErr != nil {
-			common.Log.Critical("Syntax Error: %v, SQL: %s", syntaxErr, sql)
+			common.Log.Warn("Syntax Error: %v, SQL: %s", syntaxErr, sql)
 		}
 
 		q := &Query4Audit{Query: sql, Stmt: stmt}
@@ -371,7 +371,7 @@ func TestIndexAdvise(t *testing.T) {
 	for _, sql := range common.TestSQLs {
 		stmt, syntaxErr := sqlparser.Parse(sql)
 		if syntaxErr != nil {
-			common.Log.Critical("Syntax Error: %v, SQL: %s", syntaxErr, sql)
+			common.Log.Warn("Syntax Error: %v, SQL: %s", syntaxErr, sql)
 		}
 
 		q := &Query4Audit{Query: sql, Stmt: stmt}
@@ -402,7 +402,7 @@ func TestIndexAdviseNoEnv(t *testing.T) {
 	for _, sql := range common.TestSQLs {
 		stmt, syntaxErr := sqlparser.Parse(sql)
 		if syntaxErr != nil {
-			common.Log.Critical("Syntax Error: %v, SQL: %s", syntaxErr, sql)
+			common.Log.Warn("Syntax Error: %v, SQL: %s", syntaxErr, sql)
 		}
 
 		q := &Query4Audit{Query: sql, Stmt: stmt}
@@ -467,7 +467,7 @@ func TestIdxColsTypeCheck(t *testing.T) {
 	for _, sql := range sqls {
 		stmt, syntaxErr := sqlparser.Parse(sql)
 		if syntaxErr != nil {
-			common.Log.Critical("Syntax Error: %v, SQL: %s", syntaxErr, sql)
+			common.Log.Warn("Syntax Error: %v, SQL: %s", syntaxErr, sql)
 		}
 
 		q := &Query4Audit{Query: sql, Stmt: stmt}

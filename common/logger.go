@@ -24,13 +24,38 @@ import (
 )
 
 type Logger interface {
+	Info(...interface{})
 	Print(...interface{})
+	Debug(...interface{})
+	Warn(...interface{})
+	Warning(...interface{})
+	Error(...interface{})
 }
 
 type LocalLogger struct {
 }
 
+func (*LocalLogger) Info(v ...interface{}) {
+	fmt.Print(v)
+}
+
 func (*LocalLogger) Print(v ...interface{}) {
+	fmt.Print(v)
+}
+
+func (*LocalLogger) Debug(v ...interface{}) {
+	fmt.Print(v)
+}
+
+func (*LocalLogger) Warn(v ...interface{}) {
+	fmt.Print(v)
+}
+
+func (*LocalLogger) Warning(v ...interface{}) {
+	fmt.Print(v)
+}
+
+func (*LocalLogger) Error(v ...interface{}) {
 	fmt.Print(v)
 }
 

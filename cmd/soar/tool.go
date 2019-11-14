@@ -196,7 +196,7 @@ func initQuery(query string) string {
 		// https://stackoverflow.com/questions/22744443/check-if-there-is-something-to-read-on-stdin-in-golang
 		stat, err := os.Stdin.Stat()
 		if stat == nil {
-			common.Log.Critical("os.Stdin.Stat Error: %v", err)
+			common.Log.Warn("os.Stdin.Stat Error: %v", err)
 			os.Exit(1)
 		}
 		if (stat.Mode() & os.ModeCharDevice) != 0 {
@@ -208,7 +208,7 @@ func initQuery(query string) string {
 		var data []byte
 		data, err = ioutil.ReadAll(os.Stdin)
 		if err != nil {
-			common.Log.Critical("ioutil.ReadAll Error: %v", err)
+			common.Log.Warn("ioutil.ReadAll Error: %v", err)
 		}
 		common.Log.Debug("initQuery get query from os.Stdin")
 		return string(data)
@@ -218,7 +218,7 @@ func initQuery(query string) string {
 		var data []byte
 		data, err = ioutil.ReadFile(query)
 		if err != nil {
-			common.Log.Critical("ioutil.ReadFile Error: %v", err)
+			common.Log.Warn("ioutil.ReadFile Error: %v", err)
 		}
 		common.Log.Debug("initQuery get query from file: %s", query)
 		return string(data)

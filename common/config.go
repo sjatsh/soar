@@ -67,7 +67,7 @@ type Configuration struct {
 
 	// +++++++++++++++日志相关+++++++++++++++++
 	// 日志级别，这里使用了 beego 的 log 包
-	// [0:Emergency, 1:Alert, 2:Critical, 3:Error, 4:Warning, 5:Notice, 6:Informational, 7:Debug]
+	// [0:Emergency, 1:Alert, 2:Warn, 3:Error, 4:Warning, 5:Notice, 6:Informational, 7:Debug]
 	LogLevel int `yaml:"log-level"`
 	// 日志输出位置，默认日志输出到控制台
 	// 目前只支持['console', 'file']两种形式，如非console形式这里需要指定文件的路径，可以是相对路径
@@ -597,7 +597,7 @@ func readCmdFlags() error {
 	delimiter := flag.String("delimiter", Config.Delimiter, "Delimiter, SQL分隔符")
 	minCardinality := flag.Float64("min-cardinality", Config.MinCardinality, "MinCardinality，索引列散粒度最低阈值，散粒度低于该值的列不添加索引，建议范围0.0 ~ 100.0")
 	// +++++++++++++++日志相关+++++++++++++++++
-	logLevel := flag.Int("log-level", Config.LogLevel, "LogLevel, 日志级别, [0:Emergency, 1:Alert, 2:Critical, 3:Error, 4:Warning, 5:Notice, 6:Informational, 7:Debug]")
+	logLevel := flag.Int("log-level", Config.LogLevel, "LogLevel, 日志级别, [0:Emergency, 1:Alert, 2:Warn, 3:Error, 4:Warning, 5:Notice, 6:Informational, 7:Debug]")
 	logOutput := flag.String("log-output", Config.LogOutput, "LogOutput, 日志输出位置")
 	reportType := flag.String("report-type", Config.ReportType, "ReportType, 优化建议输出格式，目前支持: json, text, markdown, html等")
 	reportCSS := flag.String("report-css", Config.ReportCSS, "ReportCSS, 当 ReportType 为 html 格式时使用的 css 风格，如不指定会提供一个默认风格。CSS可以是本地文件，也可以是一个URL")
@@ -831,7 +831,6 @@ func ParseConfig(configFile string) error {
 		}
 		defer blFd.Close()
 	}
-	LoggerInit()
 	return err
 }
 

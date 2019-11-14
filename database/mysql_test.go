@@ -44,12 +44,12 @@ func TestMain(m *testing.M) {
 	common.Log.Debug("mysql_test init")
 	connTest, err = NewConnector(common.Config.TestDSN)
 	if err != nil {
-		common.Log.Critical("Test env Error: %v", err)
+		common.Log.Warn("Test env Error: %v", err)
 		os.Exit(0)
 	}
 
 	if _, err := connTest.Version(); err != nil {
-		common.Log.Critical("Test env Error: %v", err)
+		common.Log.Warn("Test env Error: %v", err)
 		os.Exit(0)
 	}
 

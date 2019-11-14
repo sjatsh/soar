@@ -378,7 +378,7 @@ func main() {
 				rw := ast.NewRewrite(sql)
 				if rw == nil {
 					// 都到这一步了 sql 不会语法不正确，因此 rw 一般不会为 nil
-					common.Log.Critical("NewRewrite nil point error, SQL: %s", sql)
+					common.Log.Warn("NewRewrite nil point error, SQL: %s", sql)
 					os.Exit(1)
 				}
 				// SQL 转写需要的源信息采集，如果没有配置环境则只做有限改写
