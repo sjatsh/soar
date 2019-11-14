@@ -16,7 +16,7 @@ WHERE
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | 10.00% | ☠️ **O(n)** | Using where |
+| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | n% | ☠️ **O(n)** | Using where |
 
 
 
@@ -41,6 +41,7 @@ WHERE
 
 * **Severity:**  L2
 
+* **Content:**  为列length添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_length\` (\`length\`) ;
 
@@ -72,7 +73,7 @@ WHERE
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | 10.00% | ☠️ **O(n)** | Using where |
+| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | n% | ☠️ **O(n)** | Using where |
 
 
 
@@ -97,6 +98,7 @@ WHERE
 
 * **Severity:**  L2
 
+* **Content:**  为列length添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_length\` (\`length\`) ;
 
@@ -193,7 +195,7 @@ WHERE
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | 33.33% | ☠️ **O(n)** | Using where |
+| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | n% | ☠️ **O(n)** | Using where |
 
 
 
@@ -218,6 +220,7 @@ WHERE
 
 * **Severity:**  L2
 
+* **Content:**  为列length添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_length\` (\`length\`) ;
 
@@ -250,7 +253,7 @@ WHERE
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | 11.11% | ☠️ **O(n)** | Using where |
+| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | n% | ☠️ **O(n)** | Using where |
 
 
 
@@ -275,6 +278,7 @@ WHERE
 
 * **Severity:**  L2
 
+* **Content:**  为列length添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_length\` (\`length\`) ;
 
@@ -306,7 +310,7 @@ WHERE
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | SIMPLE | *film* | NULL | range | idx\_title | idx\_title | 767 | NULL | 2 | ☠️ **100.00%** | ☠️ **O(n)** | Using index condition |
+| 1  | SIMPLE | *film* | NULL | range | idx\_title | idx\_title | 767 | NULL | 2 | ☠️ **100.00%** | O(log n)+ | Using index condition |
 
 
 
@@ -351,7 +355,7 @@ WHERE
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | SIMPLE | *film* | NULL | ALL | idx\_title | NULL | NULL | NULL | 1000 | 90.00% | ☠️ **O(n)** | Using where |
+| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
 
 
 
@@ -364,10 +368,6 @@ WHERE
 #### Type信息解读
 
 * ☠️ **ALL**: 最坏的情况, 从头到尾全表扫描.
-
-#### Extra信息解读
-
-* **Using where**: WHERE条件用于筛选出与下一个表匹配的数据然后返回给客户端. 除非故意做的全表扫描, 否则连接类型是ALL或者是index, 且在Extra列的值中没有Using Where, 则该查询可能是有问题的.
 
 
 ## 应尽量避免在 WHERE 子句中对字段进行 NULL 值判断
@@ -405,7 +405,7 @@ WHERE
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | SIMPLE | *film* | NULL | ref | idx\_title | idx\_title | 767 | const | 1 | 10.00% | ☠️ **O(n)** | Using where |
+| 1  | SIMPLE | *film* | NULL | ref | idx\_title | idx\_title | 767 | const | 1 | n% | O(log n) | Using where |
 
 
 
@@ -430,6 +430,7 @@ WHERE
 
 * **Severity:**  L2
 
+* **Content:**  为列title添加索引，散粒度为: n%; 为列length添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_title\_length\` (\`title\`,\`length\`) ;
 
@@ -462,7 +463,7 @@ WHERE
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | SIMPLE | *film* | NULL | ref | idx\_title | idx\_title | 767 | const | 1 | 33.33% | ☠️ **O(n)** | Using where |
+| 1  | SIMPLE | *film* | NULL | ref | idx\_title | idx\_title | 767 | const | 1 | n% | O(log n) | Using where |
 
 
 
@@ -487,6 +488,7 @@ WHERE
 
 * **Severity:**  L2
 
+* **Content:**  为列title添加索引，散粒度为: n%; 为列length添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_title\_length\` (\`title\`,\`length\`) ;
 
@@ -520,7 +522,7 @@ WHERE
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | SIMPLE | *film* | NULL | ref | idx\_title,<br>idx\_fk\_language\_id | idx\_title | 767 | const | 1 | 33.33% | ☠️ **O(n)** | Using where |
+| 1  | SIMPLE | *film* | NULL | ref | idx\_title,<br>idx\_fk\_language\_id | idx\_title | 767 | const | 1 | n% | O(log n) | Using where |
 
 
 
@@ -545,6 +547,7 @@ WHERE
 
 * **Severity:**  L2
 
+* **Content:**  为列title添加索引，散粒度为: n%; 为列length添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_title\_length\` (\`title\`,\`length\`) ;
 
@@ -577,7 +580,7 @@ WHERE
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | SIMPLE | *film* | NULL | ALL | idx\_fk\_language\_id | NULL | NULL | NULL | 1000 | 33.33% | ☠️ **O(n)** | Using where |
+| 1  | SIMPLE | *film* | NULL | ALL | idx\_fk\_language\_id | NULL | NULL | NULL | 1000 | n% | ☠️ **O(n)** | Using where |
 
 
 
@@ -602,6 +605,7 @@ WHERE
 
 * **Severity:**  L2
 
+* **Content:**  为列length添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_length\` (\`length\`) ;
 
@@ -636,7 +640,7 @@ GROUP BY
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | SIMPLE | *film* | NULL | ALL | idx\_fk\_language\_id | NULL | NULL | NULL | 1000 | 10.00% | ☠️ **O(n)** | Using where; Using temporary |
+| 1  | SIMPLE | *film* | NULL | ALL | idx\_fk\_language\_id | NULL | NULL | NULL | 1000 | n% | ☠️ **O(n)** | Using where; Using temporary |
 
 
 
@@ -663,6 +667,7 @@ GROUP BY
 
 * **Severity:**  L2
 
+* **Content:**  为列length添加索引，散粒度为: n%; 为列language\_id添加索引，散粒度为: n%; 为列release\_year添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_length\_language\_id\_release\_year\` (\`length\`,\`language\_id\`,\`release\_year\`) ;
 
@@ -704,7 +709,7 @@ GROUP BY
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | 33.33% | ☠️ **O(n)** | Using where; Using temporary |
+| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | n% | ☠️ **O(n)** | Using where; Using temporary |
 
 
 
@@ -731,6 +736,7 @@ GROUP BY
 
 * **Severity:**  L2
 
+* **Content:**  为列length添加索引，散粒度为: n%; 为列release\_year添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_length\_release\_year\` (\`length\`,\`release\_year\`) ;
 
@@ -795,6 +801,7 @@ GROUP BY
 
 * **Severity:**  L2
 
+* **Content:**  为列release\_year添加索引，散粒度为: n%; 为列language\_id添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_release\_year\_language\_id\` (\`release\_year\`,\`language\_id\`) ;
 
@@ -844,7 +851,7 @@ GROUP BY
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | 10.00% | ☠️ **O(n)** | Using where; Using temporary |
+| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | n% | ☠️ **O(n)** | Using where; Using temporary |
 
 
 
@@ -871,6 +878,7 @@ GROUP BY
 
 * **Severity:**  L2
 
+* **Content:**  为列length添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_length\` (\`length\`) ;
 
@@ -943,6 +951,7 @@ GROUP BY
 
 * **Severity:**  L2
 
+* **Content:**  为列release\_year添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_release\_year\` (\`release\_year\`) ;
 
@@ -978,12 +987,36 @@ GROUP BY
   address, district
 ```
 
+##  Explain信息
+
+| id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1  | SIMPLE | *address* | NULL | ALL | NULL | NULL | NULL | NULL | 603 | ☠️ **100.00%** | ☠️ **O(n)** | Using temporary |
+
+
+
+### Explain信息解读
+
+#### SelectType信息解读
+
+* **SIMPLE**: 简单SELECT(不使用UNION或子查询等).
+
+#### Type信息解读
+
+* ☠️ **ALL**: 最坏的情况, 从头到尾全表扫描.
+
+#### Extra信息解读
+
+* ☠️ **Using temporary**: 表示MySQL在对查询结果排序时使用临时表. 常见于排序order by和分组查询group by.
+
+
 ##  为sakila库的address表添加索引
 
 * **Item:**  IDX.001
 
 * **Severity:**  L2
 
+* **Content:**  为列address添加索引，散粒度为: n%; 为列district添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`address\` add index \`idx\_address\_district\` (\`address\`,\`district\`) ;
 
@@ -1094,12 +1127,40 @@ ORDER BY
   language_id
 ```
 
+##  Explain信息
+
+| id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | n% | ☠️ **O(n)** | Using where; Using temporary; Using filesort |
+
+
+
+### Explain信息解读
+
+#### SelectType信息解读
+
+* **SIMPLE**: 简单SELECT(不使用UNION或子查询等).
+
+#### Type信息解读
+
+* ☠️ **ALL**: 最坏的情况, 从头到尾全表扫描.
+
+#### Extra信息解读
+
+* **Using where**: WHERE条件用于筛选出与下一个表匹配的数据然后返回给客户端. 除非故意做的全表扫描, 否则连接类型是ALL或者是index, 且在Extra列的值中没有Using Where, 则该查询可能是有问题的.
+
+* ☠️ **Using filesort**: MySQL会对结果使用一个外部索引排序,而不是从表里按照索引次序读到相关内容. 可能在内存或者磁盘上进行排序. MySQL中无法利用索引完成的排序操作称为'文件排序'.
+
+* ☠️ **Using temporary**: 表示MySQL在对查询结果排序时使用临时表. 常见于排序order by和分组查询group by.
+
+
 ##  为sakila库的film表添加索引
 
 * **Item:**  IDX.001
 
 * **Severity:**  L2
 
+* **Content:**  为列length添加索引，散粒度为: n%; 为列release\_year添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_length\_release\_year\` (\`length\`,\`release\_year\`) ;
 
@@ -1135,7 +1196,7 @@ ORDER BY
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | 10.00% | ☠️ **O(n)** | Using where; Using temporary; Using filesort |
+| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | n% | ☠️ **O(n)** | Using where; Using temporary; Using filesort |
 
 
 
@@ -1164,6 +1225,7 @@ ORDER BY
 
 * **Severity:**  L2
 
+* **Content:**  为列length添加索引，散粒度为: n%; 为列release\_year添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_length\_release\_year\` (\`length\`,\`release\_year\`) ;
 
@@ -1189,7 +1251,7 @@ ORDER BY
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | 10.00% | ☠️ **O(n)** | Using where; Using filesort |
+| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | n% | ☠️ **O(n)** | Using where; Using filesort |
 
 
 
@@ -1216,6 +1278,7 @@ ORDER BY
 
 * **Severity:**  L2
 
+* **Content:**  为列length添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_length\` (\`length\`) ;
 
@@ -1269,7 +1332,7 @@ LIMIT
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | 10.00% | ☠️ **O(n)** | Using where; Using temporary; Using filesort |
+| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | n% | ☠️ **O(n)** | Using where; Using temporary; Using filesort |
 
 
 
@@ -1298,6 +1361,7 @@ LIMIT
 
 * **Severity:**  L2
 
+* **Content:**  为列length添加索引，散粒度为: n%; 为列release\_year添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_length\_release\_year\` (\`length\`,\`release\_year\`) ;
 
@@ -1325,7 +1389,7 @@ LIMIT
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | 10.00% | ☠️ **O(n)** | Using where; Using filesort |
+| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | n% | ☠️ **O(n)** | Using where; Using filesort |
 
 
 
@@ -1352,6 +1416,7 @@ LIMIT
 
 * **Severity:**  L2
 
+* **Content:**  为列length添加索引，散粒度为: n%; 为列release\_year添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_length\_release\_year\` (\`length\`,\`release\_year\`) ;
 
@@ -1489,7 +1554,7 @@ LIMIT
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | 33.33% | ☠️ **O(n)** | Using where; Using filesort |
+| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | n% | ☠️ **O(n)** | Using where; Using filesort |
 
 
 
@@ -1516,6 +1581,7 @@ LIMIT
 
 * **Severity:**  L2
 
+* **Content:**  为列length添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_length\` (\`length\`) ;
 
@@ -1551,7 +1617,7 @@ LIMIT
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | 33.33% | ☠️ **O(n)** | Using where; Using filesort |
+| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | n% | ☠️ **O(n)** | Using where; Using filesort |
 
 
 
@@ -1578,6 +1644,7 @@ LIMIT
 
 * **Severity:**  L2
 
+* **Content:**  为列length添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_length\` (\`length\`) ;
 
@@ -1611,7 +1678,7 @@ ORDER BY
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | SIMPLE | *customer* | NULL | range | idx\_fk\_address\_id | idx\_fk\_address\_id | 2 | NULL | 2 | ☠️ **100.00%** | ☠️ **O(n)** | Using index condition; Using filesort |
+| 1  | SIMPLE | *customer* | NULL | range | idx\_fk\_address\_id | idx\_fk\_address\_id | 2 | NULL | 2 | ☠️ **100.00%** | O(log n)+ | Using index condition; Using filesort |
 
 
 
@@ -1638,6 +1705,7 @@ ORDER BY
 
 * **Severity:**  L2
 
+* **Content:**  为列address\_id添加索引，散粒度为: n%; 为列last\_name添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`customer\` add index \`idx\_address\_id\_last\_name\` (\`address\_id\`,\`last\_name\`) ;
 
@@ -1672,7 +1740,7 @@ ORDER BY
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | 9.00% | ☠️ **O(n)** | Using where; Using filesort |
+| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | n% | ☠️ **O(n)** | Using where; Using filesort |
 
 
 
@@ -1699,6 +1767,7 @@ ORDER BY
 
 * **Severity:**  L2
 
+* **Content:**  为列release\_year添加索引，散粒度为: n%; 为列length添加索引，散粒度为: n%; 为列title添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_release\_year\_length\_title\` (\`release\_year\`,\`length\`,\`title\`) ;
 
@@ -1738,7 +1807,7 @@ WHERE
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | 10.00% | ☠️ **O(n)** | Using where |
+| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | n% | ☠️ **O(n)** | Using where |
 
 
 
@@ -1763,6 +1832,7 @@ WHERE
 
 * **Severity:**  L2
 
+* **Content:**  为列release\_year添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_release\_year\` (\`release\_year\`) ;
 
@@ -1787,7 +1857,7 @@ WHERE
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | SIMPLE | *film* | NULL | ref | idx\_fk\_language\_id | idx\_fk\_language\_id | 1 | const | 1 | 10.00% | ☠️ **O(n)** | Using where |
+| 1  | SIMPLE | *film* | NULL | ref | idx\_fk\_language\_id | idx\_fk\_language\_id | 1 | const | 1 | n% | O(log n) | Using where |
 
 
 
@@ -1812,6 +1882,7 @@ WHERE
 
 * **Severity:**  L2
 
+* **Content:**  为列length添加索引，散粒度为: n%; 为列language\_id添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_length\_language\_id\` (\`length\`,\`language\_id\`) ;
 
@@ -1836,7 +1907,7 @@ WHERE
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | SIMPLE | *film* | NULL | range | idx\_fk\_language\_id | idx\_fk\_language\_id | 1 | NULL | 1 | 33.33% | ☠️ **O(n)** | Using index condition; Using where |
+| 1  | SIMPLE | *film* | NULL | range | idx\_fk\_language\_id | idx\_fk\_language\_id | 1 | NULL | 1 | n% | O(log n)+ | Using index condition; Using where |
 
 
 
@@ -1863,6 +1934,7 @@ WHERE
 
 * **Severity:**  L2
 
+* **Content:**  为列length添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_length\` (\`length\`) ;
 
@@ -1889,7 +1961,7 @@ ORDER BY
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | SIMPLE | *film* | NULL | ref | idx\_title | idx\_title | 767 | const | 1 | 10.00% | ☠️ **O(n)** | Using index condition; Using where; Using filesort |
+| 1  | SIMPLE | *film* | NULL | ref | idx\_title | idx\_title | 767 | const | 1 | n% | O(log n) | Using where; Using filesort |
 
 
 
@@ -1905,8 +1977,6 @@ ORDER BY
 
 #### Extra信息解读
 
-* **Using index condition**: 在5.6版本后加入的新特性（Index Condition Pushdown）。Using index condition 会先条件过滤索引，过滤完索引后找到所有符合索引条件的数据行，随后用 WHERE 子句中的其他条件去过滤这些数据行。
-
 * **Using where**: WHERE条件用于筛选出与下一个表匹配的数据然后返回给客户端. 除非故意做的全表扫描, 否则连接类型是ALL或者是index, 且在Extra列的值中没有Using Where, 则该查询可能是有问题的.
 
 * ☠️ **Using filesort**: MySQL会对结果使用一个外部索引排序,而不是从表里按照索引次序读到相关内容. 可能在内存或者磁盘上进行排序. MySQL中无法利用索引完成的排序操作称为'文件排序'.
@@ -1918,6 +1988,7 @@ ORDER BY
 
 * **Severity:**  L2
 
+* **Content:**  为列title添加索引，散粒度为: n%; 为列length添加索引，散粒度为: n%; 为列release\_year添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_title\_length\_release\_year\` (\`title\`,\`length\`,\`release\_year\`) ;
 
@@ -1952,7 +2023,7 @@ ORDER BY
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | SIMPLE | *film* | NULL | ref | idx\_title | idx\_title | 767 | const | 1 | 33.33% | ☠️ **O(n)** | Using index condition; Using where; Using filesort |
+| 1  | SIMPLE | *film* | NULL | ref | idx\_title | idx\_title | 767 | const | 1 | n% | O(log n) | Using where; Using filesort |
 
 
 
@@ -1968,8 +2039,6 @@ ORDER BY
 
 #### Extra信息解读
 
-* **Using index condition**: 在5.6版本后加入的新特性（Index Condition Pushdown）。Using index condition 会先条件过滤索引，过滤完索引后找到所有符合索引条件的数据行，随后用 WHERE 子句中的其他条件去过滤这些数据行。
-
 * **Using where**: WHERE条件用于筛选出与下一个表匹配的数据然后返回给客户端. 除非故意做的全表扫描, 否则连接类型是ALL或者是index, 且在Extra列的值中没有Using Where, 则该查询可能是有问题的.
 
 * ☠️ **Using filesort**: MySQL会对结果使用一个外部索引排序,而不是从表里按照索引次序读到相关内容. 可能在内存或者磁盘上进行排序. MySQL中无法利用索引完成的排序操作称为'文件排序'.
@@ -1981,6 +2050,7 @@ ORDER BY
 
 * **Severity:**  L2
 
+* **Content:**  为列title添加索引，散粒度为: n%; 为列length添加索引，散粒度为: n%; 为列release\_year添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_title\_length\_release\_year\` (\`title\`,\`length\`,\`release\_year\`) ;
 
@@ -2014,7 +2084,7 @@ ORDER BY
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | 33.33% | ☠️ **O(n)** | Using where; Using filesort |
+| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | n% | ☠️ **O(n)** | Using where; Using filesort |
 
 
 
@@ -2041,6 +2111,7 @@ ORDER BY
 
 * **Severity:**  L2
 
+* **Content:**  为列length添加索引，散粒度为: n%; 为列release\_year添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_length\_release\_year\` (\`length\`,\`release\_year\`) ;
 
@@ -2056,7 +2127,7 @@ ORDER BY
 
 # Query: 4ECCA9568BE69E68
 
-★ ★ ★ ☆ ☆ 75分
+★ ★ ★ ★ ☆ 95分
 
 ```sql
 
@@ -2072,7 +2143,7 @@ FROM
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 1  | SIMPLE | *b* | NULL | ALL | PRIMARY | NULL | NULL | NULL | 109 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 1  | SIMPLE | *a* | NULL | ref | idx\_fk\_country\_id | idx\_fk\_country\_id | 2 | sakila.b.country\_id | 5 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
+| 1  | SIMPLE | *a* | NULL | ref | idx\_fk\_country\_id | idx\_fk\_country\_id | 2 | sakila.b.country\_id | 5 | ☠️ **100.00%** | O(log n) | NULL |
 
 
 
@@ -2097,14 +2168,6 @@ FROM
 
 * **Content:**  在列或表别名(如"tbl AS alias")中, 明确使用 AS 关键字比隐含别名(如"tbl alias")更易懂。
 
-## 最外层 SELECT 未指定 WHERE 条件
-
-* **Item:**  CLA.001
-
-* **Severity:**  L4
-
-* **Content:**  SELECT 语句没有 WHERE 子句，可能检查比预期更多的行(全表扫描)。对于 SELECT COUNT(\*) 类型的请求如果不要求精度，建议使用 SHOW TABLE STATUS 或 EXPLAIN 替代。
-
 ## 不建议使用 SELECT * 类型查询
 
 * **Item:**  COL.001
@@ -2115,7 +2178,7 @@ FROM
 
 # Query: 485D56FC88BBBDB9
 
-★ ★ ★ ☆ ☆ 75分
+★ ★ ★ ★ ☆ 95分
 
 ```sql
 
@@ -2131,7 +2194,7 @@ FROM
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 1  | SIMPLE | *a* | NULL | ALL | NULL | NULL | NULL | NULL | 600 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 1  | SIMPLE | *b* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.a.country\_id | 1 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
+| 1  | SIMPLE | *b* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.a.country\_id | 1 | ☠️ **100.00%** | O(log n) | NULL |
 
 
 
@@ -2156,14 +2219,6 @@ FROM
 
 * **Content:**  在列或表别名(如"tbl AS alias")中, 明确使用 AS 关键字比隐含别名(如"tbl alias")更易懂。
 
-## 最外层 SELECT 未指定 WHERE 条件
-
-* **Item:**  CLA.001
-
-* **Severity:**  L4
-
-* **Content:**  SELECT 语句没有 WHERE 子句，可能检查比预期更多的行(全表扫描)。对于 SELECT COUNT(\*) 类型的请求如果不要求精度，建议使用 SHOW TABLE STATUS 或 EXPLAIN 替代。
-
 ## 不建议使用 SELECT * 类型查询
 
 * **Item:**  COL.001
@@ -2174,7 +2229,7 @@ FROM
 
 # Query: 0D0DABACEDFF5765
 
-★ ★ ★ ☆ ☆ 75分
+★ ★ ★ ★ ☆ 95分
 
 ```sql
 
@@ -2190,7 +2245,7 @@ FROM
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 1  | SIMPLE | *b* | NULL | ALL | NULL | NULL | NULL | NULL | 109 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 1  | SIMPLE | *a* | NULL | ref | idx\_fk\_country\_id | idx\_fk\_country\_id | 2 | sakila.b.country\_id | 5 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
+| 1  | SIMPLE | *a* | NULL | ref | idx\_fk\_country\_id | idx\_fk\_country\_id | 2 | sakila.b.country\_id | 5 | ☠️ **100.00%** | O(log n) | NULL |
 
 
 
@@ -2214,14 +2269,6 @@ FROM
 * **Severity:**  L0
 
 * **Content:**  在列或表别名(如"tbl AS alias")中, 明确使用 AS 关键字比隐含别名(如"tbl alias")更易懂。
-
-## 最外层 SELECT 未指定 WHERE 条件
-
-* **Item:**  CLA.001
-
-* **Severity:**  L4
-
-* **Content:**  SELECT 语句没有 WHERE 子句，可能检查比预期更多的行(全表扫描)。对于 SELECT COUNT(\*) 类型的请求如果不要求精度，建议使用 SHOW TABLE STATUS 或 EXPLAIN 替代。
 
 ## 不建议使用 SELECT * 类型查询
 
@@ -2251,7 +2298,7 @@ WHERE
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 1  | SIMPLE | *a* | NULL | ALL | NULL | NULL | NULL | NULL | 600 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 1  | SIMPLE | *b* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.a.country\_id | 1 | 10.00% | ☠️ **O(n)** | Using where; Not exists |
+| 1  | SIMPLE | *b* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.a.country\_id | 1 | n% | O(log n) | Using where; Not exists |
 
 
 
@@ -2280,6 +2327,7 @@ WHERE
 
 * **Severity:**  L2
 
+* **Content:**  为列last\_update添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`country\` add index \`idx\_last\_update\` (\`last\_update\`) ;
 
@@ -2329,7 +2377,7 @@ WHERE
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 1  | SIMPLE | *b* | NULL | ALL | NULL | NULL | NULL | NULL | 109 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 1  | SIMPLE | *a* | NULL | ref | idx\_fk\_country\_id | idx\_fk\_country\_id | 2 | sakila.b.country\_id | 5 | 10.00% | ☠️ **O(n)** | Using where; Not exists |
+| 1  | SIMPLE | *a* | NULL | ref | idx\_fk\_country\_id | idx\_fk\_country\_id | 2 | sakila.b.country\_id | 5 | n% | O(log n) | Using where; Not exists |
 
 
 
@@ -2358,6 +2406,7 @@ WHERE
 
 * **Severity:**  L2
 
+* **Content:**  为列last\_update添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`city\` add index \`idx\_last\_update\` (\`last\_update\`) ;
 
@@ -2389,7 +2438,7 @@ WHERE
 
 # Query: 17D5BCF21DC2364C
 
-★ ★ ★ ☆ ☆ 65分
+★ ★ ★ ★ ☆ 85分
 
 ```sql
 
@@ -2411,10 +2460,10 @@ FROM
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 1  | PRIMARY | *a* | NULL | ALL | NULL | NULL | NULL | NULL | 600 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 1  | PRIMARY | *b* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.a.country\_id | 1 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
+| 1  | PRIMARY | *b* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.a.country\_id | 1 | ☠️ **100.00%** | O(log n) | NULL |
 | 2  | UNION | *b* | NULL | ALL | NULL | NULL | NULL | NULL | 109 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 2  | UNION | *a* | NULL | ref | idx\_fk\_country\_id | idx\_fk\_country\_id | 2 | sakila.b.country\_id | 5 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 2  | UNION | *a* | NULL | ref | idx\_fk\_country\_id | idx\_fk\_country\_id | 2 | sakila.b.country\_id | 5 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
+| 2  | UNION | *a* | NULL | ref | idx\_fk\_country\_id | idx\_fk\_country\_id | 2 | sakila.b.country\_id | 5 | ☠️ **100.00%** | O(log n) | NULL |
+| 2  | UNION | *a* | NULL | ref | idx\_fk\_country\_id | idx\_fk\_country\_id | 2 | sakila.b.country\_id | 5 | ☠️ **100.00%** | O(log n) | NULL |
 
 
 
@@ -2442,14 +2491,6 @@ FROM
 * **Severity:**  L0
 
 * **Content:**  在列或表别名(如"tbl AS alias")中, 明确使用 AS 关键字比隐含别名(如"tbl alias")更易懂。
-
-## 最外层 SELECT 未指定 WHERE 条件
-
-* **Item:**  CLA.001
-
-* **Severity:**  L4
-
-* **Content:**  SELECT 语句没有 WHERE 子句，可能检查比预期更多的行(全表扫描)。对于 SELECT COUNT(\*) 类型的请求如果不要求精度，建议使用 SHOW TABLE STATUS 或 EXPLAIN 替代。
 
 ## 不建议使用 SELECT * 类型查询
 
@@ -2495,10 +2536,10 @@ WHERE
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 1  | PRIMARY | *b* | NULL | ALL | NULL | NULL | NULL | NULL | 109 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 1  | PRIMARY | *a* | NULL | ref | idx\_fk\_country\_id | idx\_fk\_country\_id | 2 | sakila.b.country\_id | 5 | 10.00% | ☠️ **O(n)** | Using where; Not exists |
+| 1  | PRIMARY | *a* | NULL | ref | idx\_fk\_country\_id | idx\_fk\_country\_id | 2 | sakila.b.country\_id | 5 | n% | O(log n) | Using where; Not exists |
 | 2  | UNION | *a* | NULL | ALL | NULL | NULL | NULL | NULL | 600 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 2  | UNION | *b* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.a.country\_id | 1 | 10.00% | ☠️ **O(n)** | Using where; Not exists |
-| 2  | UNION | *b* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.a.country\_id | 1 | 10.00% | ☠️ **O(n)** | Using where; Not exists |
+| 2  | UNION | *b* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.a.country\_id | 1 | n% | O(log n) | Using where; Not exists |
+| 2  | UNION | *b* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.a.country\_id | 1 | n% | O(log n) | Using where; Not exists |
 
 
 
@@ -2531,6 +2572,7 @@ WHERE
 
 * **Severity:**  L2
 
+* **Content:**  为列last\_update添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`city\` add index \`idx\_last\_update\` (\`last\_update\`) ;
 
@@ -2542,6 +2584,7 @@ WHERE
 
 * **Severity:**  L2
 
+* **Content:**  为列last\_update添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`country\` add index \`idx\_last\_update\` (\`last\_update\`) ;
 
@@ -2573,7 +2616,7 @@ WHERE
 
 # Query: 3FF20E28EC9CBEF9
 
-★ ★ ★ ★ ☆ 80分
+★ ★ ★ ★ ★ 100分
 
 ```sql
 
@@ -2589,7 +2632,7 @@ FROM
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 1  | SIMPLE | *country* | NULL | ALL | PRIMARY | NULL | NULL | NULL | 109 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 1  | SIMPLE | *city* | NULL | ref | idx\_fk\_country\_id | idx\_fk\_country\_id | 2 | sakila.country.country\_id | 5 | 10.00% | ☠️ **O(n)** | Using where |
+| 1  | SIMPLE | *city* | NULL | ref | idx\_fk\_country\_id | idx\_fk\_country\_id | 2 | sakila.country.country\_id | 5 | n% | O(log n) | Using where |
 
 
 
@@ -2610,17 +2653,9 @@ FROM
 * **Using where**: WHERE条件用于筛选出与下一个表匹配的数据然后返回给客户端. 除非故意做的全表扫描, 否则连接类型是ALL或者是index, 且在Extra列的值中没有Using Where, 则该查询可能是有问题的.
 
 
-## 最外层 SELECT 未指定 WHERE 条件
-
-* **Item:**  CLA.001
-
-* **Severity:**  L4
-
-* **Content:**  SELECT 语句没有 WHERE 子句，可能检查比预期更多的行(全表扫描)。对于 SELECT COUNT(\*) 类型的请求如果不要求精度，建议使用 SHOW TABLE STATUS 或 EXPLAIN 替代。
-
 # Query: 5C547F08EADBB131
 
-★ ★ ★ ★ ☆ 80分
+★ ★ ★ ★ ★ 100分
 
 ```sql
 
@@ -2636,7 +2671,7 @@ FROM
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 1  | SIMPLE | *city* | NULL | ALL | NULL | NULL | NULL | NULL | 600 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 1  | SIMPLE | *country* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.city.country\_id | 1 | ☠️ **100.00%** | ☠️ **O(n)** | Using where |
+| 1  | SIMPLE | *country* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.city.country\_id | 1 | ☠️ **100.00%** | O(log n) | Using where |
 
 
 
@@ -2657,17 +2692,9 @@ FROM
 * **Using where**: WHERE条件用于筛选出与下一个表匹配的数据然后返回给客户端. 除非故意做的全表扫描, 否则连接类型是ALL或者是index, 且在Extra列的值中没有Using Where, 则该查询可能是有问题的.
 
 
-## 最外层 SELECT 未指定 WHERE 条件
-
-* **Item:**  CLA.001
-
-* **Severity:**  L4
-
-* **Content:**  SELECT 语句没有 WHERE 子句，可能检查比预期更多的行(全表扫描)。对于 SELECT COUNT(\*) 类型的请求如果不要求精度，建议使用 SHOW TABLE STATUS 或 EXPLAIN 替代。
-
 # Query: AF0C1EB58B23D2FA
 
-★ ★ ★ ★ ☆ 80分
+★ ★ ★ ★ ★ 100分
 
 ```sql
 
@@ -2683,7 +2710,7 @@ FROM
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 1  | SIMPLE | *country* | NULL | ALL | NULL | NULL | NULL | NULL | 109 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 1  | SIMPLE | *city* | NULL | ref | idx\_fk\_country\_id | idx\_fk\_country\_id | 2 | sakila.country.country\_id | 5 | ☠️ **100.00%** | ☠️ **O(n)** | Using where |
+| 1  | SIMPLE | *city* | NULL | ref | idx\_fk\_country\_id | idx\_fk\_country\_id | 2 | sakila.country.country\_id | 5 | ☠️ **100.00%** | O(log n) | Using where |
 
 
 
@@ -2704,17 +2731,9 @@ FROM
 * **Using where**: WHERE条件用于筛选出与下一个表匹配的数据然后返回给客户端. 除非故意做的全表扫描, 否则连接类型是ALL或者是index, 且在Extra列的值中没有Using Where, 则该查询可能是有问题的.
 
 
-## 最外层 SELECT 未指定 WHERE 条件
-
-* **Item:**  CLA.001
-
-* **Severity:**  L4
-
-* **Content:**  SELECT 语句没有 WHERE 子句，可能检查比预期更多的行(全表扫描)。对于 SELECT COUNT(\*) 类型的请求如果不要求精度，建议使用 SHOW TABLE STATUS 或 EXPLAIN 替代。
-
 # Query: 626571EAE84E2C8A
 
-★ ★ ★ ★ ☆ 80分
+★ ★ ★ ★ ★ 100分
 
 ```sql
 
@@ -2729,7 +2748,7 @@ FROM
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 1  | SIMPLE | *a* | NULL | ALL | idx\_fk\_country\_id | NULL | NULL | NULL | 600 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 1  | SIMPLE | *b* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.a.country\_id | 1 | ☠️ **100.00%** | ☠️ **O(n)** | Using index |
+| 1  | SIMPLE | *b* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.a.country\_id | 1 | ☠️ **100.00%** | O(log n) | Using index |
 
 
 
@@ -2758,14 +2777,6 @@ FROM
 
 * **Content:**  在列或表别名(如"tbl AS alias")中, 明确使用 AS 关键字比隐含别名(如"tbl alias")更易懂。
 
-## 最外层 SELECT 未指定 WHERE 条件
-
-* **Item:**  CLA.001
-
-* **Severity:**  L4
-
-* **Content:**  SELECT 语句没有 WHERE 子句，可能检查比预期更多的行(全表扫描)。对于 SELECT COUNT(\*) 类型的请求如果不要求精度，建议使用 SHOW TABLE STATUS 或 EXPLAIN 替代。
-
 # Query: 50F2AB4243CE2071
 
 ★ ★ ★ ☆ ☆ 60分
@@ -2789,7 +2800,7 @@ FROM
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 1  | SIMPLE | *c* | NULL | index | PRIMARY | idx\_fk\_country\_id | 2 | NULL | 600 | ☠️ **100.00%** | ☠️ **O(n)** | Using index |
-| 1  | SIMPLE | *a* | NULL | ref | idx\_fk\_city\_id | idx\_fk\_city\_id | 2 | sakila.c.city\_id | 1 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
+| 1  | SIMPLE | *a* | NULL | ref | idx\_fk\_city\_id | idx\_fk\_city\_id | 2 | sakila.c.city\_id | 1 | ☠️ **100.00%** | O(log n) | NULL |
 
 
 
@@ -2836,7 +2847,7 @@ FROM
 
 # Query: 584CCEC8069B6947
 
-★ ☆ ☆ ☆ ☆ 30分
+★ ★ ☆ ☆ ☆ 50分
 
 ```sql
 
@@ -2864,9 +2875,9 @@ ORDER BY
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 1  | PRIMARY | *<derived2>* | NULL | ALL | NULL | NULL | NULL | NULL | 60 | ☠️ **100.00%** | ☠️ **O(n)** | Using temporary; Using filesort |
-| 1  | PRIMARY | *city* | NULL | eq\_ref | PRIMARY,<br>idx\_fk\_country\_id | PRIMARY | 2 | I.city\_id | 1 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 1  | PRIMARY | *country* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.city.country\_id | 1 | ☠️ **100.00%** | ☠️ **O(n)** | Using index |
-| 2  | DERIVED | *city* | NULL | ALL | NULL | NULL | NULL | NULL | 600 | 10.00% | ☠️ **O(n)** | Using where; Using filesort |
+| 1  | PRIMARY | *city* | NULL | eq\_ref | PRIMARY,<br>idx\_fk\_country\_id | PRIMARY | 2 | I.city\_id | 1 | ☠️ **100.00%** | O(log n) | NULL |
+| 1  | PRIMARY | *country* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.city.country\_id | 1 | ☠️ **100.00%** | O(log n) | Using index |
+| 2  | DERIVED | *city* | NULL | ALL | NULL | NULL | NULL | NULL | 600 | n% | ☠️ **O(n)** | Using where; Using filesort |
 
 
 
@@ -2901,18 +2912,11 @@ ORDER BY
 
 * **Severity:**  L2
 
+* **Content:**  为列city添加索引，散粒度为: n%; 为列last\_update添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`city\` add index \`idx\_city\_last\_update\` (\`city\`,\`last\_update\`) ;
 
 
-
-## 最外层 SELECT 未指定 WHERE 条件
-
-* **Item:**  CLA.001
-
-* **Severity:**  L4
-
-* **Content:**  SELECT 语句没有 WHERE 子句，可能检查比预期更多的行(全表扫描)。对于 SELECT COUNT(\*) 类型的请求如果不要求精度，建议使用 SHOW TABLE STATUS 或 EXPLAIN 替代。
 
 ## 同一张表被连接两次
 
@@ -2947,8 +2951,8 @@ WHERE
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | DELETE | *city* | NULL | const | PRIMARY,<br>idx\_fk\_country\_id | PRIMARY | 2 | const | 1 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 1  | DELETE | *country* | NULL | const | PRIMARY | PRIMARY | 2 | const | 1 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
+| 1  | DELETE | *city* | NULL | const | PRIMARY,<br>idx\_fk\_country\_id | PRIMARY | 2 | const | 1 | ☠️ **100.00%** | O(1) | NULL |
+| 1  | DELETE | *country* | NULL | const | PRIMARY | PRIMARY | 2 | const | 1 | ☠️ **100.00%** | O(1) | NULL |
 
 
 
@@ -2993,7 +2997,7 @@ WHERE
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 1  | DELETE | *city* | NULL | ALL | NULL | NULL | NULL | NULL | 600 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 1  | SIMPLE | *country* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.city.country\_id | 1 | 10.00% | ☠️ **O(n)** | Using where; Not exists |
+| 1  | SIMPLE | *country* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.city.country\_id | 1 | n% | O(log n) | Using where; Not exists |
 
 
 
@@ -3022,6 +3026,7 @@ WHERE
 
 * **Severity:**  L2
 
+* **Content:**  为列country添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`country\` add index \`idx\_country\` (\`country\`) ;
 
@@ -3061,7 +3066,7 @@ WHERE
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 1  | DELETE | *a2* | NULL | ALL | PRIMARY | NULL | NULL | NULL | 109 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 1  | DELETE | *a1* | NULL | ref | idx\_fk\_country\_id | idx\_fk\_country\_id | 2 | sakila.a2.country\_id | 5 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
+| 1  | DELETE | *a1* | NULL | ref | idx\_fk\_country\_id | idx\_fk\_country\_id | 2 | sakila.a2.country\_id | 5 | ☠️ **100.00%** | O(log n) | NULL |
 
 
 
@@ -3108,7 +3113,7 @@ WHERE
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 1  | DELETE | *a2* | NULL | ALL | PRIMARY | NULL | NULL | NULL | 109 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 1  | DELETE | *a1* | NULL | ref | idx\_fk\_country\_id | idx\_fk\_country\_id | 2 | sakila.a2.country\_id | 5 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
+| 1  | DELETE | *a1* | NULL | ref | idx\_fk\_country\_id | idx\_fk\_country\_id | 2 | sakila.a2.country\_id | 5 | ☠️ **100.00%** | O(log n) | NULL |
 
 
 
@@ -3174,6 +3179,7 @@ WHERE
 
 * **Severity:**  L2
 
+* **Content:**  为列length添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_length\` (\`length\`) ;
 
@@ -3208,8 +3214,8 @@ WHERE
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | UPDATE | *city* | NULL | const | PRIMARY,<br>idx\_fk\_country\_id | PRIMARY | 2 | const | 1 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 1  | UPDATE | *country* | NULL | const | PRIMARY | PRIMARY | 2 | const | 1 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
+| 1  | UPDATE | *city* | NULL | const | PRIMARY,<br>idx\_fk\_country\_id | PRIMARY | 2 | const | 1 | ☠️ **100.00%** | O(1) | NULL |
+| 1  | UPDATE | *country* | NULL | const | PRIMARY | PRIMARY | 2 | const | 1 | ☠️ **100.00%** | O(1) | NULL |
 
 
 
@@ -3250,9 +3256,9 @@ WHERE
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | UPDATE | *city* | NULL | const | PRIMARY,<br>idx\_fk\_country\_id | PRIMARY | 2 | const | 1 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 1  | UPDATE | *country* | NULL | const | PRIMARY | PRIMARY | 2 | const | 1 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 1  | SIMPLE | *address* | NULL | ref | idx\_fk\_city\_id | idx\_fk\_city\_id | 2 | const | 1 | ☠️ **100.00%** | ☠️ **O(n)** | Using index |
+| 1  | UPDATE | *city* | NULL | const | PRIMARY,<br>idx\_fk\_country\_id | PRIMARY | 2 | const | 1 | ☠️ **100.00%** | O(1) | NULL |
+| 1  | UPDATE | *country* | NULL | const | PRIMARY | PRIMARY | 2 | const | 1 | ☠️ **100.00%** | O(1) | NULL |
+| 1  | SIMPLE | *address* | NULL | ref | idx\_fk\_city\_id | idx\_fk\_city\_id | 2 | const | 1 | ☠️ **100.00%** | O(log n) | Using index |
 
 
 
@@ -3302,8 +3308,8 @@ WHERE
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | UPDATE | *city* | NULL | const | PRIMARY,<br>idx\_fk\_country\_id | PRIMARY | 2 | const | 1 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 1  | UPDATE | *country* | NULL | const | PRIMARY | PRIMARY | 2 | const | 1 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
+| 1  | UPDATE | *city* | NULL | const | PRIMARY,<br>idx\_fk\_country\_id | PRIMARY | 2 | const | 1 | ☠️ **100.00%** | O(1) | NULL |
+| 1  | UPDATE | *country* | NULL | const | PRIMARY | PRIMARY | 2 | const | 1 | ☠️ **100.00%** | O(1) | NULL |
 
 
 
@@ -3332,7 +3338,7 @@ WHERE
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | UPDATE | *film* | NULL | range | idx\_fk\_language\_id | idx\_fk\_language\_id | 1 | const | 1 | ☠️ **100.00%** | ☠️ **O(n)** | Using where |
+| 1  | UPDATE | *film* | NULL | range | idx\_fk\_language\_id | idx\_fk\_language\_id | 1 | const | 1 | ☠️ **100.00%** | O(log n)+ | Using where |
 
 
 
@@ -3363,7 +3369,7 @@ FROM
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | INSERT | *city* | NULL | ALL | NULL | NULL | NULL | NULL | 0 | 0.00% | ☠️ **O(n)** | NULL |
+| 1  | INSERT | *city* | NULL | ALL | NULL | NULL | NULL | NULL | 0 | n% | ☠️ **O(n)** | NULL |
 | 1  | SIMPLE | *country* | NULL | index | NULL | PRIMARY | 2 | NULL | 109 | ☠️ **100.00%** | ☠️ **O(n)** | Using index |
 
 
@@ -3417,7 +3423,7 @@ VALUES
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | INSERT | *city* | NULL | ALL | NULL | NULL | NULL | NULL | 0 | 0.00% | ☠️ **O(n)** | NULL |
+| 1  | INSERT | *city* | NULL | ALL | NULL | NULL | NULL | NULL | 0 | n% | ☠️ **O(n)** | NULL |
 
 
 
@@ -3444,7 +3450,7 @@ FROM
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | INSERT | *city* | NULL | ALL | NULL | NULL | NULL | NULL | 0 | 0.00% | ☠️ **O(n)** | NULL |
+| 1  | INSERT | *city* | NULL | ALL | NULL | NULL | NULL | NULL | 0 | n% | ☠️ **O(n)** | NULL |
 
 
 
@@ -3479,7 +3485,7 @@ FROM
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | REPLACE | *city* | NULL | ALL | NULL | NULL | NULL | NULL | 0 | 0.00% | ☠️ **O(n)** | NULL |
+| 1  | REPLACE | *city* | NULL | ALL | NULL | NULL | NULL | NULL | 0 | n% | ☠️ **O(n)** | NULL |
 | 1  | SIMPLE | *country* | NULL | index | NULL | PRIMARY | 2 | NULL | 109 | ☠️ **100.00%** | ☠️ **O(n)** | Using index |
 
 
@@ -3533,7 +3539,7 @@ VALUES
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | REPLACE | *city* | NULL | ALL | NULL | NULL | NULL | NULL | 0 | 0.00% | ☠️ **O(n)** | NULL |
+| 1  | REPLACE | *city* | NULL | ALL | NULL | NULL | NULL | NULL | 0 | n% | ☠️ **O(n)** | NULL |
 
 
 
@@ -3560,7 +3566,7 @@ FROM
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | REPLACE | *city* | NULL | ALL | NULL | NULL | NULL | NULL | 0 | 0.00% | ☠️ **O(n)** | NULL |
+| 1  | REPLACE | *city* | NULL | ALL | NULL | NULL | NULL | NULL | 0 | n% | ☠️ **O(n)** | NULL |
 
 
 
@@ -3794,7 +3800,7 @@ LIMIT
 
 # Query: 16CB4628D2597D40
 
-★ ★ ★ ☆ ☆ 65分
+★ ★ ★ ★ ☆ 85分
 
 ```sql
 
@@ -3816,10 +3822,10 @@ FROM
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 1  | PRIMARY | *i* | NULL | ALL | NULL | NULL | NULL | NULL | 600 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 1  | PRIMARY | *o* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.i.city\_id | 1 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
+| 1  | PRIMARY | *o* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.i.city\_id | 1 | ☠️ **100.00%** | O(log n) | NULL |
 | 2  | UNION | *o* | NULL | ALL | NULL | NULL | NULL | NULL | 109 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 2  | UNION | *i* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.o.country\_id | 1 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 2  | UNION | *i* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.o.country\_id | 1 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
+| 2  | UNION | *i* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.o.country\_id | 1 | ☠️ **100.00%** | O(log n) | NULL |
+| 2  | UNION | *i* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.o.country\_id | 1 | ☠️ **100.00%** | O(log n) | NULL |
 
 
 
@@ -3845,14 +3851,6 @@ FROM
 * **Severity:**  L0
 
 * **Content:**  在列或表别名(如"tbl AS alias")中, 明确使用 AS 关键字比隐含别名(如"tbl alias")更易懂。
-
-## 最外层 SELECT 未指定 WHERE 条件
-
-* **Item:**  CLA.001
-
-* **Severity:**  L4
-
-* **Content:**  SELECT 语句没有 WHERE 子句，可能检查比预期更多的行(全表扫描)。对于 SELECT COUNT(\*) 类型的请求如果不要求精度，建议使用 SHOW TABLE STATUS 或 EXPLAIN 替代。
 
 ## 不建议使用 SELECT * 类型查询
 
@@ -3895,12 +3893,38 @@ GROUP BY
   first_name
 ```
 
+##  Explain信息
+
+| id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1  | SIMPLE | *actor* | NULL | ref | idx\_actor\_last\_name | idx\_actor\_last\_name | 137 | const | 2 | n% | O(log n) | Using where; Using temporary |
+
+
+
+### Explain信息解读
+
+#### SelectType信息解读
+
+* **SIMPLE**: 简单SELECT(不使用UNION或子查询等).
+
+#### Type信息解读
+
+* **ref**: 连接不能基于关键字选择单个行, 可能查找到多个符合条件的行. 叫做ref是因为索引要跟某个参考值相比较. 这个参考值或者是一个数, 或者是来自一个表里的多表查询的结果值. 例:'SELECT * FROM tbl WHERE idx_col=expr;'.
+
+#### Extra信息解读
+
+* **Using where**: WHERE条件用于筛选出与下一个表匹配的数据然后返回给客户端. 除非故意做的全表扫描, 否则连接类型是ALL或者是index, 且在Extra列的值中没有Using Where, 则该查询可能是有问题的.
+
+* ☠️ **Using temporary**: 表示MySQL在对查询结果排序时使用临时表. 常见于排序order by和分组查询group by.
+
+
 ##  为sakila库的actor表添加索引
 
 * **Item:**  IDX.001
 
 * **Severity:**  L2
 
+* **Content:**  为列last\_name添加索引，散粒度为: n%; 为列last\_update添加索引，散粒度为: n%; 为列first\_name添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`actor\` add index \`idx\_last\_name\_last\_update\_first\_name\` (\`last\_name\`,\`last\_update\`,\`first\_name\`) ;
 
@@ -3966,10 +3990,10 @@ WHERE
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 1  | PRIMARY | *i* | NULL | ALL | NULL | NULL | NULL | NULL | 600 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 1  | PRIMARY | *o* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.i.city\_id | 1 | ☠️ **100.00%** | ☠️ **O(n)** | Using where; Not exists |
+| 1  | PRIMARY | *o* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.i.city\_id | 1 | ☠️ **100.00%** | O(log n) | Using where; Not exists |
 | 2  | UNION | *o* | NULL | ALL | NULL | NULL | NULL | NULL | 109 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 2  | UNION | *i* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.o.country\_id | 1 | ☠️ **100.00%** | ☠️ **O(n)** | Using where; Not exists |
-| 2  | UNION | *i* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.o.country\_id | 1 | ☠️ **100.00%** | ☠️ **O(n)** | Using where; Not exists |
+| 2  | UNION | *i* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.o.country\_id | 1 | ☠️ **100.00%** | O(log n) | Using where; Not exists |
+| 2  | UNION | *i* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.o.country\_id | 1 | ☠️ **100.00%** | O(log n) | Using where; Not exists |
 
 
 
@@ -4020,7 +4044,7 @@ WHERE
 
 # Query: 1E8B70E30062FD13
 
-★ ★ ★ ★ ☆ 80分
+★ ★ ★ ★ ★ 100分
 
 ```sql
 
@@ -4035,7 +4059,7 @@ FROM
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 1  | SIMPLE | *customer* | NULL | ALL | idx\_fk\_address\_id | NULL | NULL | NULL | 599 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 1  | SIMPLE | *address* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.customer.address\_id | 1 | ☠️ **100.00%** | ☠️ **O(n)** | Using index |
+| 1  | SIMPLE | *address* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.customer.address\_id | 1 | ☠️ **100.00%** | O(log n) | Using index |
 
 
 
@@ -4056,17 +4080,9 @@ FROM
 * **Using index**: 只需通过索引就可以从表中获取列的信息, 无需额外去读取真实的行数据. 如果查询使用的列值仅仅是一个简单索引的部分值, 则会使用这种策略来优化查询.
 
 
-## 最外层 SELECT 未指定 WHERE 条件
-
-* **Item:**  CLA.001
-
-* **Severity:**  L4
-
-* **Content:**  SELECT 语句没有 WHERE 子句，可能检查比预期更多的行(全表扫描)。对于 SELECT COUNT(\*) 类型的请求如果不要求精度，建议使用 SHOW TABLE STATUS 或 EXPLAIN 替代。
-
 # Query: E48A20D0413512DA
 
-★ ☆ ☆ ☆ ☆ 20分
+★ ☆ ☆ ☆ ☆ 30分
 
 ```sql
 
@@ -4095,15 +4111,15 @@ ORDER BY
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 1  | PRIMARY | *country* | NULL | index | PRIMARY | PRIMARY | 2 | NULL | 109 | ☠️ **100.00%** | ☠️ **O(n)** | Using index; Using temporary; Using filesort |
-| 1  | PRIMARY | *city* | NULL | ref | PRIMARY,<br>idx\_fk\_country\_id | idx\_fk\_country\_id | 2 | sakila.country.country\_id | 5 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 1  | PRIMARY | *c* | NULL | ALL | NULL | NULL | NULL | NULL | 600 | 10.00% | ☠️ **O(n)** | Using where; Using join buffer (Block Nested Loop) |
-| 1  | PRIMARY | *a* | NULL | ref | PRIMARY,<br>idx\_fk\_city\_id | idx\_fk\_city\_id | 2 | sakila.city.city\_id | 1 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 1  | PRIMARY | *cu* | NULL | ref | idx\_fk\_address\_id | idx\_fk\_address\_id | 2 | sakila.a.address\_id | 1 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 1  | PRIMARY | *<derived2>* | NULL | ref | <auto\_key0> | <auto\_key0> | 152 | sakila.a.address | 6 | ☠️ **100.00%** | ☠️ **O(n)** | Using index |
+| 1  | PRIMARY | *city* | NULL | ref | PRIMARY,<br>idx\_fk\_country\_id | idx\_fk\_country\_id | 2 | sakila.country.country\_id | 5 | ☠️ **100.00%** | O(log n) | NULL |
+| 1  | PRIMARY | *c* | NULL | ALL | NULL | NULL | NULL | NULL | 600 | n% | ☠️ **O(n)** | Using where; Using join buffer (Block Nested Loop) |
+| 1  | PRIMARY | *a* | NULL | ref | PRIMARY,<br>idx\_fk\_city\_id | idx\_fk\_city\_id | 2 | sakila.city.city\_id | 1 | ☠️ **100.00%** | O(log n) | NULL |
+| 1  | PRIMARY | *cu* | NULL | ref | idx\_fk\_address\_id | idx\_fk\_address\_id | 2 | sakila.a.address\_id | 1 | ☠️ **100.00%** | O(log n) | NULL |
+| 1  | PRIMARY | *<derived2>* | NULL | ref | <auto\_key0> | <auto\_key0> | 152 | sakila.a.address | 6 | ☠️ **100.00%** | O(log n) | Using index |
 | 2  | DERIVED | *a* | NULL | ALL | PRIMARY,<br>idx\_fk\_city\_id | NULL | NULL | NULL | 603 | ☠️ **100.00%** | ☠️ **O(n)** | Using filesort |
-| 2  | DERIVED | *cu* | NULL | ref | idx\_fk\_store\_id,<br>idx\_fk\_address\_id | idx\_fk\_address\_id | 2 | sakila.a.address\_id | 1 | 54.42% | ☠️ **O(n)** | Using where |
-| 2  | DERIVED | *city* | NULL | eq\_ref | PRIMARY,<br>idx\_fk\_country\_id | PRIMARY | 2 | sakila.a.city\_id | 1 | ☠️ **100.00%** | ☠️ **O(n)** | NULL |
-| 2  | DERIVED | *country* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.city.country\_id | 1 | ☠️ **100.00%** | ☠️ **O(n)** | Using index |
+| 2  | DERIVED | *cu* | NULL | ref | idx\_fk\_store\_id,<br>idx\_fk\_address\_id | idx\_fk\_address\_id | 2 | sakila.a.address\_id | 1 | n% | O(log n) | Using where |
+| 2  | DERIVED | *city* | NULL | eq\_ref | PRIMARY,<br>idx\_fk\_country\_id | PRIMARY | 2 | sakila.a.city\_id | 1 | ☠️ **100.00%** | O(log n) | NULL |
+| 2  | DERIVED | *country* | NULL | eq\_ref | PRIMARY | PRIMARY | 2 | sakila.city.country\_id | 1 | ☠️ **100.00%** | O(log n) | Using index |
 
 
 
@@ -4144,8 +4160,21 @@ ORDER BY
 
 * **Severity:**  L2
 
+* **Content:**  为列city添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`city\` add index \`idx\_city\` (\`city\`) ;
+
+
+
+##  为sakila库的customer\_list表添加索引
+
+* **Item:**  IDX.002
+
+* **Severity:**  L2
+
+* **Content:**  为列city添加索引，散粒度为: n%; 为列address添加索引，散粒度为: n%; 为列SID添加索引，散粒度为: n%; 为列phone添加索引，散粒度为: n%; 
+
+* **Case:** ALTER TABLE \`sakila\`.\`customer\_list\` add index \`idx\_city\` (\`city\`), add index \`idx\_address\` (\`address\`), add index \`idx\_SID\_phone\` (\`SID\`,\`phone\`) ;
 
 
 
@@ -4156,14 +4185,6 @@ ORDER BY
 * **Severity:**  L0
 
 * **Content:**  在列或表别名(如"tbl AS alias")中, 明确使用 AS 关键字比隐含别名(如"tbl alias")更易懂。
-
-## 最外层 SELECT 未指定 WHERE 条件
-
-* **Item:**  CLA.001
-
-* **Severity:**  L4
-
-* **Content:**  SELECT 语句没有 WHERE 子句，可能检查比预期更多的行(全表扫描)。对于 SELECT COUNT(\*) 类型的请求如果不要求精度，建议使用 SHOW TABLE STATUS 或 EXPLAIN 替代。
 
 ## ORDER BY 语句对多个不同条件使用不同方向的排序无法使用索引
 
@@ -4255,6 +4276,29 @@ FROM
 GROUP BY  
   DATE( last_update)
 ```
+
+##  Explain信息
+
+| id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | ☠️ **100.00%** | ☠️ **O(n)** | Using temporary |
+
+
+
+### Explain信息解读
+
+#### SelectType信息解读
+
+* **SIMPLE**: 简单SELECT(不使用UNION或子查询等).
+
+#### Type信息解读
+
+* ☠️ **ALL**: 最坏的情况, 从头到尾全表扫描.
+
+#### Extra信息解读
+
+* ☠️ **Using temporary**: 表示MySQL在对查询结果排序时使用临时表. 常见于排序order by和分组查询group by.
+
 
 ## 最外层 SELECT 未指定 WHERE 条件
 
@@ -4355,7 +4399,7 @@ GROUP BY
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | 20.00% | ☠️ **O(n)** | Using where; Using temporary |
+| 1  | SIMPLE | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | n% | ☠️ **O(n)** | Using where; Using temporary |
 
 
 
@@ -4382,6 +4426,7 @@ GROUP BY
 
 * **Severity:**  L2
 
+* **Content:**  为列description添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_description\` (\`description\`(255)) ;
 
@@ -4497,7 +4542,7 @@ ORDER BY
 
 | id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1  | SIMPLE | *NULL* | NULL | NULL | NULL | NULL | NULL | NULL | 0 | 0.00% | ☠️ **O(n)** | NULL |
+| 1  | SIMPLE | *NULL* | NULL | NULL | NULL | NULL | NULL | NULL | 0 | n% | NULL | Impossible WHERE |
 
 
 
@@ -4507,6 +4552,10 @@ ORDER BY
 
 * **SIMPLE**: 简单SELECT(不使用UNION或子查询等).
 
+#### Extra信息解读
+
+* **Impossible WHERE**: WHERE条件过滤没有效果, 最终是全表扫描.
+
 
 ##  为sakila库的city表添加索引
 
@@ -4514,6 +4563,7 @@ ORDER BY
 
 * **Severity:**  L2
 
+* **Content:**  为列city添加索引，散粒度为: n%; 为列last\_update添加索引，散粒度为: n%; 
 
 * **Case:** ALTER TABLE \`sakila\`.\`city\` add index \`idx\_city\_last\_update\` (\`city\`,\`last\_update\`) ;
 
@@ -4640,4 +4690,153 @@ ALTER TABLE
 DROP  
   DEFAULT
 ```
+
+# Query: B48292EDB9D0E010
+
+★ ★ ☆ ☆ ☆ 40分
+
+```sql
+
+SELECT  
+  maxId, minId  
+FROM  
+  (
+SELECT  
+  MAX( film_id) maxId, MIN( film_id) minId  
+FROM  
+  film  
+WHERE  
+  last_update  > '2016-03-27 02:01:01'
+) as  d
+```
+
+##  Explain信息
+
+| id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1  | PRIMARY | *<derived2>* | NULL | system | NULL | NULL | NULL | NULL | 1 | ☠️ **100.00%** | O(1) | NULL |
+| 2  | DERIVED | *film* | NULL | ALL | NULL | NULL | NULL | NULL | 1000 | n% | ☠️ **O(n)** | Using where |
+
+
+
+### Explain信息解读
+
+#### SelectType信息解读
+
+* **DERIVED**: 用于from子句里有子查询的情况. MySQL会递归执行这些子查询, 把结果放在临时表里.
+
+* **PRIMARY**: 最外层的select.
+
+#### Type信息解读
+
+* **system**: 这是const连接类型的一种特例, 该表仅有一行数据(=系统表).
+
+* ☠️ **ALL**: 最坏的情况, 从头到尾全表扫描.
+
+#### Extra信息解读
+
+* **Using where**: WHERE条件用于筛选出与下一个表匹配的数据然后返回给客户端. 除非故意做的全表扫描, 否则连接类型是ALL或者是index, 且在Extra列的值中没有Using Where, 则该查询可能是有问题的.
+
+
+##  为sakila库的film表添加索引
+
+* **Item:**  IDX.001
+
+* **Severity:**  L2
+
+* **Content:**  为列last\_update添加索引，散粒度为: n%; 
+
+* **Case:** ALTER TABLE \`sakila\`.\`film\` add index \`idx\_last\_update\` (\`last\_update\`) ;
+
+
+
+## 最外层 SELECT 未指定 WHERE 条件
+
+* **Item:**  CLA.001
+
+* **Severity:**  L4
+
+* **Content:**  SELECT 语句没有 WHERE 子句，可能检查比预期更多的行(全表扫描)。对于 SELECT COUNT(\*) 类型的请求如果不要求精度，建议使用 SHOW TABLE STATUS 或 EXPLAIN 替代。
+
+## MySQL 对子查询的优化效果不佳
+
+* **Item:**  SUB.001
+
+* **Severity:**  L4
+
+* **Content:**  MySQL 将外部查询中的每一行作为依赖子查询执行子查询。 这是导致严重性能问题的常见原因。这可能会在 MySQL 5.6 版本中得到改善, 但对于5.1及更早版本, 建议将该类查询分别重写为 JOIN 或 LEFT OUTER JOIN。
+
+## 不建议在子查询中使用函数
+
+* **Item:**  SUB.006
+
+* **Severity:**  L2
+
+* **Content:**  MySQL将外部查询中的每一行作为依赖子查询执行子查询，如果在子查询中使用函数，即使是semi-join也很难进行高效的查询。可以将子查询重写为OUTER JOIN语句并用连接条件对数据进行过滤。
+
+# Query: 4A39009B402BAD9B
+
+★ ★ ☆ ☆ ☆ 50分
+
+```sql
+
+SELECT  
+  maxId, minId  
+FROM  
+  (
+SELECT  
+  MAX( film_id) maxId, MIN( film_id) minId  
+FROM  
+  film) as  d
+```
+
+##  Explain信息
+
+| id | select\_type | table | partitions | type | possible_keys | key | key\_len | ref | rows | filtered | scalability | Extra |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1  | PRIMARY | *<derived2>* | NULL | system | NULL | NULL | NULL | NULL | 1 | ☠️ **100.00%** | O(1) | NULL |
+| 2  | DERIVED | *NULL* | NULL | NULL | NULL | NULL | NULL | NULL | 0 | n% | NULL | Select tables optimized away |
+
+
+
+### Explain信息解读
+
+#### SelectType信息解读
+
+* **DERIVED**: 用于from子句里有子查询的情况. MySQL会递归执行这些子查询, 把结果放在临时表里.
+
+* **PRIMARY**: 最外层的select.
+
+#### Type信息解读
+
+* **system**: 这是const连接类型的一种特例, 该表仅有一行数据(=系统表).
+
+#### Extra信息解读
+
+* **Select tables optimized away**: 仅通过使用索引，优化器可能仅从聚合函数结果中返回一行。如：在没有 GROUP BY 子句的情况下，基于索引优化 MIN/MAX 操作，或者对于 MyISAM 存储引擎优化 COUNT(*) 操作，不必等到执行阶段再进行计算，查询执行计划生成的阶段即完成优化。
+
+
+## 最外层 SELECT 未指定 WHERE 条件
+
+* **Item:**  CLA.001
+
+* **Severity:**  L4
+
+* **Content:**  SELECT 语句没有 WHERE 子句，可能检查比预期更多的行(全表扫描)。对于 SELECT COUNT(\*) 类型的请求如果不要求精度，建议使用 SHOW TABLE STATUS 或 EXPLAIN 替代。
+
+## MySQL 对子查询的优化效果不佳
+
+* **Item:**  SUB.001
+
+* **Severity:**  L4
+
+* **Content:**  MySQL 将外部查询中的每一行作为依赖子查询执行子查询。 这是导致严重性能问题的常见原因。这可能会在 MySQL 5.6 版本中得到改善, 但对于5.1及更早版本, 建议将该类查询分别重写为 JOIN 或 LEFT OUTER JOIN。
+
+## 不建议在子查询中使用函数
+
+* **Item:**  SUB.006
+
+* **Severity:**  L2
+
+* **Content:**  MySQL将外部查询中的每一行作为依赖子查询执行子查询，如果在子查询中使用函数，即使是semi-join也很难进行高效的查询。可以将子查询重写为OUTER JOIN语句并用连接条件对数据进行过滤。
 

@@ -16,19 +16,27 @@ package types
 import (
 	gotime "time"
 
+	"fmt"
 	"github.com/pingcap/errors"
 )
 
 // MysqlTime is the internal struct type for Time.
+// The order of the attributes is refined to reduce the memory overhead
+// considering memory alignment.
 type MysqlTime struct {
-	year  uint16 // year <= 9999
-	month uint8  // month <= 12
-	day   uint8  // day <= 31
-	// When it's type is Time, HH:MM:SS may be 839:59:59, so use int to avoid overflow.
-	hour        int   // hour <= 23
-	minute      uint8 // minute <= 59
-	second      uint8 // second <= 59
+	// When it's type is Time, HH:MM:SS may be 839:59:59, so use uint32 to avoid overflow.
+	hour        uint32 // hour <= 23
 	microsecond uint32
+	year        uint16 // year <= 9999
+	month       uint8  // month <= 12
+	day         uint8  // day <= 31
+	minute      uint8  // minute <= 59
+	second      uint8  // second <= 59
+}
+
+// String implements fmt.Stringer.
+func (t MysqlTime) String() string {
+	return fmt.Sprintf("{%d %d %d %d %d %d %d}", t.year, t.month, t.day, t.hour, t.minute, t.second, t.microsecond)
 }
 
 // Year returns the year value.
@@ -70,8 +78,9 @@ func (t MysqlTime) Microsecond() int {
 func (t MysqlTime) Weekday() gotime.Weekday {
 	// TODO: Consider time_zone variable.
 	t1, err := t.GoTime(gotime.Local)
+	// allow invalid dates
 	if err != nil {
-		return 0
+		return t1.Weekday()
 	}
 	return t1.Weekday()
 }
@@ -119,11 +128,60 @@ func (t MysqlTime) GoTime(loc *gotime.Location) (gotime.Time, error) {
 
 // IsLeapYear returns if it's leap year.
 func (t MysqlTime) IsLeapYear() bool {
-	return (t.year%4 == 0 && t.year%100 != 0) || t.year%400 == 0
+	return isLeapYear(t.year)
+}
+
+func isLeapYear(year uint16) bool {
+	return (year%4 == 0 && year%100 != 0) || year%400 == 0
+}
+
+var daysByMonth = [12]int{31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}
+
+// GetLastDay returns the last day of the month
+func GetLastDay(year, month int) int {
+	var day = 0
+	if month > 0 && month <= 12 {
+		day = daysByMonth[month-1]
+	}
+	if month == 2 && isLeapYear(uint16(year)) {
+		day = 29
+	}
+	return day
+}
+
+func getFixDays(year, month, day int, ot gotime.Time) int {
+	if (year != 0 || month != 0) && day == 0 {
+		od := ot.Day()
+		t := ot.AddDate(year, month, day)
+		td := t.Day()
+		if od != td {
+			tm := int(t.Month()) - 1
+			tMax := GetLastDay(t.Year(), tm)
+			dd := tMax - od
+			return dd
+		}
+	}
+	return 0
+}
+
+// AddDate fix gap between mysql and golang api
+// When we execute select date_add('2018-01-31',interval 1 month) in mysql we got 2018-02-28
+// but in tidb we got 2018-03-03.
+// Dig it and we found it's caused by golang api time.Date(year int, month Month, day, hour, min, sec, nsec int, loc *Location) Time ,
+// it says October 32 converts to November 1 ,it conflits with mysql.
+// See https://dev.mysql.com/doc/refman/5.7/en/date-and-time-functions.html#function_date-add
+func AddDate(year, month, day int64, ot gotime.Time) (nt gotime.Time) {
+	df := getFixDays(int(year), int(month), int(day), ot)
+	if df != 0 {
+		nt = ot.AddDate(int(year), int(month), df)
+	} else {
+		nt = ot.AddDate(int(year), int(month), int(day))
+	}
+	return nt
 }
 
 func calcTimeFromSec(to *MysqlTime, seconds, microseconds int) {
-	to.hour = seconds / 3600
+	to.hour = uint32(seconds / 3600)
 	seconds = seconds % 3600
 	to.minute = uint8(seconds / 60)
 	to.second = uint8(seconds % 60)

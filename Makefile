@@ -5,13 +5,21 @@
 #
 BINARY=soar
 GOPATH ?= $(shell go env GOPATH)
+GO111MODULE:=off
+export GO111MODULE
 # Ensure GOPATH is set before running build process.
 ifeq "$(GOPATH)" ""
   $(error Please set the environment variable GOPATH before running `make`)
 endif
 PATH := ${GOPATH}/bin:$(PATH)
 GCFLAGS=-gcflags "all=-trimpath=${GOPATH}"
-LDFLAGS=-ldflags="-s -w"
+VERSION_TAG := $(shell git describe --tags --always)
+VERSION_VERSION := $(shell git log --date=iso --pretty=format:"%cd" -1) $(VERSION_TAG)
+VERSION_COMPILE := $(shell date +"%F %T %z") by $(shell go version)
+VERSION_BRANCH  := $(shell git rev-parse --abbrev-ref HEAD)
+VERSION_GIT_DIRTY := $(shell git diff --no-ext-diff 2>/dev/null | wc -l)
+VERSION_DEV_PATH:= $(shell pwd)
+LDFLAGS=-ldflags="-s -w -X 'github.com/sjatsh/soar/common.Version=$(VERSION_VERSION)' -X 'github.com/sjatsh/soar/common.Compile=$(VERSION_COMPILE)' -X 'github.com/sjatsh/soar/common.Branch=$(VERSION_BRANCH)' -X github.com/sjatsh/soar/common.GitDirty=$(VERSION_GIT_DIRTY) -X github.com/sjatsh/soar/common.DevPath=$(VERSION_DEV_PATH)"
 
 # These are the values we want to pass for VERSION  and BUILD
 BUILD_TIME=`date +%Y%m%d%H%M`
@@ -35,7 +43,7 @@ MYSQL_VERSION := $(or ${MYSQL_VERSION}, ${MYSQL_VERSION}, latest)
 all: | fmt build
 
 .PHONY: go_version_check
-GO_VERSION_MIN=1.10
+GO_VERSION_MIN=1.12
 # Parse out the x.y or x.y.z version and output a single value x*10000+y*100+z (e.g., 1.9 is 10900)
 # that allows the three components to be checked in a single comparison.
 VER_TO_INT:=awk '{split(substr($$0, match ($$0, /[0-9\.]+/)), a, "."); print a[1]*10000+a[2]*100+a[3]}'
@@ -69,14 +77,14 @@ fmt: go_version_check
 .PHONY: test
 test:
 	@echo "$(CGREEN)Run all test cases ...$(CEND)"
-	go test -timeout 10m -race ./...
+	@go test $(LDFLAGS) -timeout 10m -race ./...
 	@echo "test Success!"
 
 # Rule golang test cases with `-update` flag
 .PHONY: test-update
 test-update:
 	@echo "$(CGREEN)Run all test cases with -update flag ...$(CEND)"
-	go test ./... -update
+	@go test $(LDFLAGS) ./... -update
 	@echo "test-update Success!"
 
 # Using bats test framework run all cli test cases
@@ -92,9 +100,9 @@ test-cli: build
 .PHONY: cover
 cover: test
 	@echo "$(CGREEN)Run test cover check ...$(CEND)"
-	go test -coverpkg=./... -coverprofile=coverage.data ./... | column -t
-	go tool cover -html=coverage.data -o coverage.html
-	go tool cover -func=coverage.data -o coverage.txt
+	@go test $(LDFLAGS) -coverpkg=./... -coverprofile=coverage.data ./... | column -t
+	@go tool cover -html=coverage.data -o coverage.html
+	@go tool cover -func=coverage.data -o coverage.txt
 	@tail -n 1 coverage.txt | awk '{sub(/%/, "", $$NF); \
 		if($$NF < 80) \
 			{print "$(CRED)"$$0"%$(CEND)"} \
@@ -107,10 +115,9 @@ cover: test
 build: fmt
 	@echo "$(CGREEN)Building ...$(CEND)"
 	@mkdir -p bin
-	@bash ./genver.sh
 	@ret=0 && for d in $$(go list -f '{{if (eq .Name "main")}}{{.ImportPath}}{{end}}' ./...); do \
 		b=$$(basename $${d}) ; \
-		go build ${GCFLAGS} -o bin/$${b} $$d || ret=$$? ; \
+		go build ${LDFLAGS} ${GCFLAGS} -o bin/$${b} $$d || ret=$$? ; \
 	done ; exit $$ret
 	@echo "build Success!"
 
@@ -132,8 +139,8 @@ doc: build
 .PHONY: heuristic
 heuristic: doc
 	@echo "$(CGREEN)Update Heuristic rule golden files ...$(CEND)"
-	go test github.com/XiaoMi/soar/advisor -v -update -run TestListHeuristicRules
-	go test github.com/XiaoMi/soar/advisor -v -update -run TestMergeConflictHeuristicRules
+	go test github.com/sjatsh/soar/advisor -v -update -run TestListHeuristicRules
+	go test github.com/sjatsh/soar/advisor -v -update -run TestMergeConflictHeuristicRules
 	docker stop soar-mysql 2>/dev/null || true
 
 # Update vitess vendor
@@ -161,9 +168,9 @@ vendor: vitess pingcap-parser
 .PHONY: lint
 lint: build
 	@echo "$(CGREEN)Run linter check ...$(CEND)"
-	CGO_ENABLED=0 retool do gometalinter.v2 -j 1 --config doc/example/metalinter.json ./...
-	retool do revive -formatter friendly --exclude vendor/... -config doc/example/revive.toml ./...
-	retool do golangci-lint --tests=false run
+	CGO_ENABLED=0 GOMODULE111=off retool do gometalinter.v2 -j 1 --config doc/example/metalinter.json ./...
+	GOMODULE111=off retool do revive -formatter friendly --exclude vendor/... -config doc/example/revive.toml ./...
+	GOMODULE111=off retool do golangci-lint --tests=false run
 	@echo "gometalinter check your code is pretty good"
 
 .PHONY: release
@@ -191,7 +198,8 @@ docker:
 	-e MYSQL_DATABASE=sakila \
 	-p 3306:3306 \
 	-v `pwd`/test/sql/init.sql.gz:/docker-entrypoint-initdb.d/init.sql.gz \
-	$(MYSQL_RELEASE):$(MYSQL_VERSION)
+	$(MYSQL_RELEASE):$(MYSQL_VERSION) \
+	--sql-mode ""
 
 	@echo "waiting for sakila database initializing "
 	@timeout=180; while [ $${timeout} -gt 0 ] ; do \

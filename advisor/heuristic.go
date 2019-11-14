@@ -24,12 +24,14 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/XiaoMi/soar/ast"
-	"github.com/XiaoMi/soar/common"
-	"github.com/XiaoMi/soar/database"
+	"github.com/sjatsh/soar/ast"
+	"github.com/sjatsh/soar/common"
+	"github.com/sjatsh/soar/database"
+
 	"github.com/gedex/inflector"
 	"github.com/percona/go-mysql/query"
 	tidb "github.com/pingcap/parser/ast"
+	"github.com/pingcap/parser/format"
 	"github.com/pingcap/parser/mysql"
 	"github.com/tidwall/gjson"
 	"vitess.io/vitess/go/vt/sqlparser"
@@ -62,9 +64,11 @@ func (q *Query4Audit) RuleImplicitAlias() Rule {
 // RuleStarAlias ALI.002
 func (q *Query4Audit) RuleStarAlias() Rule {
 	var rule = q.RuleOK()
-	re := regexp.MustCompile(`(?i)(\*\s+as\b)`)
-	if re.FindString(q.Query) != "" {
-		rule = HeuristicRules["ALI.002"]
+	tkns := ast.Tokenizer(q.Query)
+	for i, tkn := range tkns {
+		if tkn.Val == "*" && i+1 < len(tkns) && tkns[i+1].Val == "as" {
+			rule = HeuristicRules["ALI.002"]
+		}
 	}
 	return rule
 }
@@ -169,7 +173,7 @@ func (idxAdv *IndexAdvisor) RuleImplicitConversion() Rule {
 		return rule
 	}
 
-	var content string
+	var content []string
 	conditions := ast.FindAllCondition(idxAdv.Ast)
 	for _, cond := range conditions {
 		var colList []*common.Column
@@ -258,9 +262,9 @@ func (idxAdv *IndexAdvisor) RuleImplicitConversion() Rule {
 					colList[0].Table, colList[0].Name, type1,
 					colList[1].Table, colList[1].Name, type2)
 				if strings.ToLower(type1) != strings.ToLower(type2) {
-					content += fmt.Sprintf("`%s`.`%s` (%s) VS `%s`.`%s` (%s) datatype not match",
+					content = append(content, fmt.Sprintf("`%s`.`%s` (%s) VS `%s`.`%s` (%s) datatype not match",
 						colList[0].Table, colList[0].Name, type1,
-						colList[1].Table, colList[1].Name, type2)
+						colList[1].Table, colList[1].Name, type2))
 					continue
 				}
 
@@ -269,9 +273,9 @@ func (idxAdv *IndexAdvisor) RuleImplicitConversion() Rule {
 					colList[0].Table, colList[0].Name, colList[0].Character,
 					colList[1].Table, colList[1].Name, colList[1].Character)
 				if colList[0].Character != colList[1].Character {
-					content += fmt.Sprintf("`%s`.`%s` (%s) VS `%s`.`%s` (%s) charset not match",
+					content = append(content, fmt.Sprintf("`%s`.`%s` (%s) VS `%s`.`%s` (%s) charset not match",
 						colList[0].Table, colList[0].Name, colList[0].Character,
-						colList[1].Table, colList[1].Name, colList[1].Character)
+						colList[1].Table, colList[1].Name, colList[1].Character))
 					continue
 				}
 
@@ -280,9 +284,9 @@ func (idxAdv *IndexAdvisor) RuleImplicitConversion() Rule {
 					colList[0].Table, colList[0].Name, colList[0].Collation,
 					colList[1].Table, colList[1].Name, colList[1].Collation)
 				if colList[0].Collation != colList[1].Collation {
-					content += fmt.Sprintf("`%s`.`%s` (%s) VS `%s`.`%s` (%s) collation not match",
+					content = append(content, fmt.Sprintf("`%s`.`%s` (%s) VS `%s`.`%s` (%s) collation not match",
 						colList[0].Table, colList[0].Name, colList[0].Collation,
-						colList[1].Table, colList[1].Name, colList[1].Collation)
+						colList[1].Table, colList[1].Name, colList[1].Collation))
 					continue
 				}
 			}
@@ -294,7 +298,8 @@ func (idxAdv *IndexAdvisor) RuleImplicitConversion() Rule {
 					"date", "time", "datetime", "timestamp", "year",
 				},
 				sqlparser.IntVal: {
-					"tinyint", "smallint", "mediumint", "int", "integer", "bigint", "timestamp", "year", "bit",
+					"tinyint", "smallint", "mediumint", "int", "integer", "bigint",
+					"timestamp", "year", "bit", "decimal",
 				},
 				sqlparser.FloatVal: {
 					"float", "double", "real", "decimal",
@@ -329,11 +334,11 @@ func (idxAdv *IndexAdvisor) RuleImplicitConversion() Rule {
 						continue
 					}
 
-					c := fmt.Sprintf("%s表中列%s的定义是 %s 而不是 %s",
+					c := fmt.Sprintf("%s表中列%s的定义是 %s 而不是 %s。",
 						colList[0].Table, colList[0].Name, colList[0].DataType, typNameMap[val.Type])
 
 					common.Log.Debug("Implicit data type conversion: %s", c)
-					content += c
+					content = append(content, c)
 				}
 			}
 
@@ -343,9 +348,9 @@ func (idxAdv *IndexAdvisor) RuleImplicitConversion() Rule {
 			// TODO
 		}
 	}
-	if content != "" {
+	if len(content) > 0 {
 		rule = HeuristicRules["ARG.003"]
-		rule.Content = content
+		rule.Content = strings.Join(common.RemoveDuplicatesItem(content), " ")
 	}
 	return rule
 }
@@ -356,6 +361,12 @@ func (q *Query4Audit) RuleNoWhere() Rule {
 	err := sqlparser.Walk(func(node sqlparser.SQLNode) (kontinue bool, err error) {
 		switch n := node.(type) {
 		case *sqlparser.Select:
+			for _, f := range n.From {
+				switch f.(type) {
+				case *sqlparser.JoinTableExpr:
+					return false, nil
+				}
+			}
 			if n.Where == nil && sqlparser.String(n.From) != "dual" {
 				rule = HeuristicRules["CLA.001"]
 				return false, nil
@@ -409,7 +420,7 @@ func (q *Query4Audit) RuleOffsetLimit() Rule {
 				switch v := n.Offset.(type) {
 				case *sqlparser.SQLVal:
 					offset, err := strconv.Atoi(string(v.Val))
-					// 检查一下Offset阈值，太小了给这个建议也没什么用，阈值写死了没加配置
+					// TODO: 检查一下Offset阈值，太小了给这个建议也没什么用，阈值写死了没加配置
 					if err == nil && offset > 1000 {
 						rule = HeuristicRules["CLA.003"]
 						return false, nil
@@ -1152,8 +1163,14 @@ func (q *Query4Audit) RuleUpdateSetAnd() Rule {
 	var rule = q.RuleOK()
 	switch s := q.Stmt.(type) {
 	case *sqlparser.Update:
-		if strings.Contains(sqlparser.String(s.Exprs), " and ") {
-			rule = HeuristicRules["RES.005"]
+		for _, c := range s.Exprs {
+			switch c.Expr.(type) {
+			case *sqlparser.Subquery:
+			default:
+				if strings.Contains(sqlparser.String(c), " and ") {
+					rule = HeuristicRules["RES.005"]
+				}
+			}
 		}
 	}
 	return rule
@@ -1327,6 +1344,83 @@ func (q *Query4Audit) RuleMultiCompare() Rule {
 			}
 		}
 	}
+	return rule
+}
+
+// RuleCreateOnUpdate RES.010
+func (q *Query4Audit) RuleCreateOnUpdate() Rule {
+	var rule = q.RuleOK()
+	switch q.Stmt.(type) {
+	case *sqlparser.DDL:
+		for _, tiStmt := range q.TiStmt {
+			switch node := tiStmt.(type) {
+			case *tidb.CreateTableStmt:
+				for _, col := range node.Cols {
+					if col.Tp == nil {
+						continue
+					}
+					for _, op := range col.Options {
+						if op.Tp == tidb.ColumnOptionOnUpdate {
+							rule = HeuristicRules["RES.010"]
+							return rule
+						}
+					}
+				}
+
+			case *tidb.AlterTableStmt:
+				for _, spec := range node.Specs {
+					switch spec.Tp {
+					case tidb.AlterTableAddColumns, tidb.AlterTableModifyColumn, tidb.AlterTableChangeColumn:
+						for _, col := range spec.NewColumns {
+							if col.Tp == nil {
+								continue
+							}
+							for _, op := range col.Options {
+								if op.Tp == tidb.ColumnOptionOnUpdate {
+									rule = HeuristicRules["RES.010"]
+									return rule
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return rule
+}
+
+// RuleUpdateOnUpdate RES.011
+func (idxAdv *IndexAdvisor) RuleUpdateOnUpdate() Rule {
+	rule := HeuristicRules["OK"]
+	// 未开启测试环境不进行检查
+	if common.Config.TestDSN.Disable {
+		return rule
+	}
+	err := sqlparser.Walk(func(node sqlparser.SQLNode) (kontinue bool, err error) {
+		switch stmt := node.(type) {
+		case *sqlparser.Update:
+			for _, tbExpr := range stmt.TableExprs {
+				ddl, err := idxAdv.vEnv.ShowCreateTable(sqlparser.String(tbExpr))
+				if err != nil {
+					common.Log.Error("RuleMaxTextColsCount create statement got failed: %s", err.Error())
+					return false, err
+				}
+				if strings.Contains(ddl, "ON UPDATE") {
+					rule = HeuristicRules["RES.011"]
+					break
+				}
+			}
+			for _, setExpr := range stmt.Exprs {
+				tup := strings.Split(sqlparser.String(setExpr), " = ")
+				if len(tup) == 2 && tup[0] == tup[1] {
+					rule = HeuristicRules["OK"]
+				}
+			}
+		}
+		return true, nil
+	}, idxAdv.Ast)
+	common.LogIfError(err, "")
 	return rule
 }
 
@@ -1541,6 +1635,24 @@ func (q *Query4Audit) RuleSubQueryFunctions() Rule {
 		return false, nil
 	}, q.Stmt)
 	common.LogIfError(err, "")
+	return rule
+}
+
+// RuleUNIONLimit SUB.007
+func (q *Query4Audit) RuleUNIONLimit() Rule {
+	var rule = q.RuleOK()
+	for _, tiStmtNode := range q.TiStmt {
+		switch stmt := tiStmtNode.(type) {
+		case *tidb.UnionStmt:
+			if stmt.Limit != nil {
+				for _, sel := range stmt.SelectList.Selects {
+					if sel.Limit == nil {
+						rule = HeuristicRules["SUB.007"]
+					}
+				}
+			}
+		}
+	}
 	return rule
 }
 
@@ -1801,7 +1913,7 @@ func (q *Query4Audit) RuleCountConst() Rule {
 func (q *Query4Audit) RuleSumNPE() Rule {
 	var rule = q.RuleOK()
 	fingerprint := query.Fingerprint(q.Query)
-	// TODO: https://github.com/XiaoMi/soar/issues/143
+	// TODO: https://github.com/sjatsh/soar/issues/143
 	// https://dev.mysql.com/doc/refman/8.0/en/group-by-functions.html
 	sumReg := regexp.MustCompile(`(?i)sum\(\s*[0-9a-z?]*\s*\)`)
 	isnullReg := regexp.MustCompile(`(?i)isnull\(sum\(\s*[0-9a-z?]*\s*\)\)`)
@@ -2116,8 +2228,24 @@ func (q *Query4Audit) RuleORUsage() Rule {
 	switch q.Stmt.(type) {
 	case *sqlparser.Select:
 		err := sqlparser.Walk(func(node sqlparser.SQLNode) (kontinue bool, err error) {
-			switch node.(type) {
+			switch n := node.(type) {
 			case *sqlparser.OrExpr:
+				switch n.Left.(type) {
+				case *sqlparser.IsExpr:
+					// IS TRUE|FALSE|NULL eg. a = 1 or a IS NULL 这种情况也需要考虑
+					return true, nil
+				}
+				switch n.Right.(type) {
+				case *sqlparser.IsExpr:
+					// IS TRUE|FALSE|NULL eg. a = 1 or a IS NULL 这种情况也需要考虑
+					return true, nil
+				}
+
+				if strings.Fields(sqlparser.String(n.Left))[0] != strings.Fields(sqlparser.String(n.Right))[0] {
+					// 不同字段需要区分开，不同字段的 OR 不能改写为 IN
+					return true, nil
+				}
+
 				rule = HeuristicRules["ARG.008"]
 				return false, nil
 			}
@@ -2133,14 +2261,16 @@ func (q *Query4Audit) RuleSpaceWithQuote() Rule {
 	var rule = q.RuleOK()
 	for _, tk := range ast.Tokenize(q.Query) {
 		if tk.Type == ast.TokenTypeQuote {
-			// 序列化的Val是带引号，所以要取第2个最倒数第二个，这样也就不用担心len<2了。
-			switch tk.Val[1] {
-			case ' ':
-				rule = HeuristicRules["ARG.009"]
-			}
-			switch tk.Val[len(tk.Val)-2] {
-			case ' ':
-				rule = HeuristicRules["ARG.009"]
+			if len(tk.Val) >= 2 {
+				// 序列化的Val是带引号，所以要取第2个和倒数第二个，这样也就不用担心len<2了。
+				switch tk.Val[1] {
+				case ' ':
+					rule = HeuristicRules["ARG.009"]
+				}
+				switch tk.Val[len(tk.Val)-2] {
+				case ' ':
+					rule = HeuristicRules["ARG.009"]
+				}
 			}
 		}
 	}
@@ -2191,6 +2321,24 @@ func (q *Query4Audit) RuleInsertValues() Rule {
 		case sqlparser.Values:
 			if len(val) > common.Config.MaxValueCount {
 				rule = HeuristicRules["ARG.012"]
+			}
+		}
+	}
+	return rule
+}
+
+// RuleFullWidthQuote ARG.013
+func (q *Query4Audit) RuleFullWidthQuote() Rule {
+	var rule = q.RuleOK()
+	for _, node := range q.TiStmt {
+		switch n := node.(type) {
+		case *tidb.CreateTableStmt, *tidb.AlterTableStmt:
+			var sb strings.Builder
+			ctx := format.NewRestoreCtx(format.DefaultRestoreFlags, &sb)
+			if err := n.Restore(ctx); err == nil {
+				if strings.Contains(sb.String(), `“”`) || strings.Contains(sb.String(), `‘’`) {
+					rule = HeuristicRules["ARG.013"]
+				}
 			}
 		}
 	}
@@ -2287,6 +2435,24 @@ func (q *Query4Audit) RuleDataDrop() Rule {
 		}
 	case *sqlparser.Delete:
 		rule = HeuristicRules["SEC.003"]
+	}
+	return rule
+}
+
+// RuleInjection SEC.004
+func (q *Query4Audit) RuleInjection() Rule {
+	var rule = q.RuleOK()
+	if q.TiStmt != nil {
+		json := ast.StmtNode2JSON(q.Query, "", "")
+		fs := common.JSONFind(json, "FnName")
+		for _, f := range fs {
+			functionName := gjson.Get(f, "L")
+			switch functionName.String() {
+			case "sleep", "benchmark", "get_lock", "release_lock":
+				// Ref: https://www.k0rz3n.com/2019/02/01/一篇文章带你深入理解%20SQL%20盲注/
+				rule = HeuristicRules["SEC.004"]
+			}
+		}
 	}
 	return rule
 }
@@ -2749,7 +2915,7 @@ func (q *Query4Audit) RuleUniqueKeyDup() Rule {
 			switch node := tiStmt.(type) {
 			case *tidb.CreateIndexStmt:
 				// create index
-				if node.Unique {
+				if node.KeyType == tidb.IndexKeyTypeUnique {
 					re := regexp.MustCompile(`(?i)(create\s+(unique)\s)`)
 					rule = HeuristicRules["KEY.009"]
 					if position := re.FindIndex([]byte(q.Query)); len(position) > 0 {
@@ -2827,11 +2993,20 @@ func (q *Query4Audit) RuleTimestampDefault() Rule {
 					if col.Tp == nil {
 						continue
 					}
-					if col.Tp.Tp == mysql.TypeTimestamp {
+					switch col.Tp.Tp {
+					case mysql.TypeTimestamp, mysql.TypeDate, mysql.TypeDatetime, mysql.TypeNewDate:
 						hasDefault := false
+						var sb strings.Builder
+						ctx := format.NewRestoreCtx(format.DefaultRestoreFlags, &sb)
 						for _, option := range col.Options {
 							if option.Tp == tidb.ColumnOptionDefaultValue {
 								hasDefault = true
+								if err := option.Restore(ctx); err == nil {
+									if strings.HasPrefix(sb.String(), `DEFAULT '0`) ||
+										strings.HasPrefix(sb.String(), `DEFAULT 0`) {
+										hasDefault = false
+									}
+								}
 							}
 						}
 						if !hasDefault {
@@ -2851,11 +3026,20 @@ func (q *Query4Audit) RuleTimestampDefault() Rule {
 							if col.Tp == nil {
 								continue
 							}
-							if col.Tp.Tp == mysql.TypeTimestamp {
+							var sb strings.Builder
+							ctx := format.NewRestoreCtx(format.DefaultRestoreFlags, &sb)
+							switch col.Tp.Tp {
+							case mysql.TypeTimestamp, mysql.TypeDate, mysql.TypeDatetime, mysql.TypeNewDate:
 								hasDefault := false
 								for _, option := range col.Options {
 									if option.Tp == tidb.ColumnOptionDefaultValue {
 										hasDefault = true
+										if err := option.Restore(ctx); err == nil {
+											if strings.HasPrefix(sb.String(), `DEFAULT '0`) ||
+												strings.HasPrefix(sb.String(), `DEFAULT 0`) {
+												hasDefault = false
+											}
+										}
 									}
 								}
 								if !hasDefault {
@@ -2895,6 +3079,16 @@ func (q *Query4Audit) RuleAutoIncrementInitNotZero() Rule {
 // RuleColumnWithCharset COL.014
 func (q *Query4Audit) RuleColumnWithCharset() Rule {
 	var rule = q.RuleOK()
+	tks := ast.Tokenize(q.Query)
+	for _, tk := range tks {
+		if tk.Type == ast.TokenTypeWord {
+			switch strings.TrimSpace(strings.ToLower(tk.Val)) {
+			case "national", "nvarchar", "nchar", "nvarchar(", "nchar(", "character":
+				rule = HeuristicRules["COL.014"]
+				return rule
+			}
+		}
+	}
 	switch q.Stmt.(type) {
 	case *sqlparser.DDL:
 		for _, tiStmt := range q.TiStmt {
@@ -3727,9 +3921,14 @@ func RuleMySQLError(item string, err error) Rule {
 		}
 	}
 
-	// Received #1146 error from MySQL server: "table xxx doesn't exist"
-	errReg := regexp.MustCompile(`(?i)Received #([0-9]+) error from MySQL server: ['"](.*)['"]`)
 	errStr := err.Error()
+	// Error 1071: Specified key was too long; max key length is 3072 bytes
+	errReg := regexp.MustCompile(`(?i)Error ([0-9]+): (.*)`)
+	if strings.HasPrefix(errStr, "Received") {
+		// Received #1146 error from MySQL server: "table xxx doesn't exist"
+		errReg = regexp.MustCompile(`(?i)Received #([0-9]+) error from MySQL server: ['"](.*)['"]`)
+	}
+
 	msg := errReg.FindStringSubmatch(errStr)
 	var mysqlError MySQLError
 
@@ -3762,7 +3961,7 @@ func RuleMySQLError(item string, err error) Rule {
 	default:
 		return Rule{
 			Item:     item,
-			Summary:  "MySQL execute failed: " + mysqlError.ErrString,
+			Summary:  "MySQL execute failed",
 			Severity: "L8",
 			Content:  mysqlError.ErrString,
 		}

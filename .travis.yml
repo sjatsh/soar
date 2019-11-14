@@ -1,19 +1,14 @@
 language: go
 
 go:
-  - "1.10.x"
-  - "1.11.x"
+  - "1.12.x"
+  - "1.13.x"
 
 sudo: required
 
-go_import_path: github.com/XiaoMi/soar
+go_import_path: github.com/sjatsh/soar
 
-addons:
-  apt:
-   sources:
-    - mysql-5.7-trusty
-   packages:
-    - mysql-client
+dist: xenial
 
 services:
   - docker

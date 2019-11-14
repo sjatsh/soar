@@ -19,9 +19,11 @@ package ast
 import (
 	"flag"
 	"fmt"
+	"path/filepath"
+	"runtime"
 	"testing"
 
-	"github.com/XiaoMi/soar/common"
+	"github.com/sjatsh/soar/common"
 
 	"github.com/kr/pretty"
 	"vitess.io/vitess/go/vt/sqlparser"
@@ -31,6 +33,10 @@ var update = flag.Bool("update", false, "update .golden files")
 
 func TestMain(m *testing.M) {
 	// 初始化 init
+	if common.DevPath == "" {
+		_, file, _, _ := runtime.Caller(0)
+		common.DevPath, _ = filepath.Abs(filepath.Dir(filepath.Join(file, ".."+string(filepath.Separator))))
+	}
 	common.BaseDir = common.DevPath
 	err := common.ParseConfig("")
 	common.LogIfError(err, "init ParseConfig")
@@ -79,7 +85,10 @@ func TestGetParseTableWithStmt(t *testing.T) {
 
 func TestFindCondition(t *testing.T) {
 	common.Log.Debug("Entering function: %s", common.GetFunctionName())
-	for _, sql := range common.TestSQLs {
+	sqls := []string{
+		`SELECT * FROM film WHERE length % 20 = 4;`,
+	}
+	for _, sql := range append(sqls, common.TestSQLs...) {
 		fmt.Println(sql)
 		stmt, err := sqlparser.Parse(sql)
 		// pretty.Println(stmt)

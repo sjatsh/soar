@@ -21,10 +21,10 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/XiaoMi/soar/common"
+	"github.com/sjatsh/soar/common"
 
-	"github.com/XiaoMi/soar/env"
 	"github.com/kr/pretty"
+	"github.com/sjatsh/soar/env"
 	"vitess.io/vitess/go/vt/sqlparser"
 )
 
@@ -60,14 +60,28 @@ func TestRuleImplicitAlias(t *testing.T) {
 // ALI.002
 func TestRuleStarAlias(t *testing.T) {
 	common.Log.Debug("Entering function: %s", common.GetFunctionName())
-	sqls := []string{
-		"select tbl.* as c1,c2,c3 from tbl where id < 1000",
+	sqls := [][]string{
+		{
+			"select tbl.* AS c1,c2,c3 from tbl where id < 1000",
+			"SELECT * as",
+		},
+		{
+			`SELECT c1, c2, c3, FROM tb WHERE id < 1000 AND content="mytest* as test"`,
+			`select *`,
+		},
 	}
-	for _, sql := range sqls {
+	for _, sql := range sqls[0] {
 		q, _ := NewQuery4Audit(sql)
 		rule := q.RuleStarAlias()
 		if rule.Item != "ALI.002" {
 			t.Error("Rule not match:", rule.Item, "Expect : ALI.002")
+		}
+	}
+	for _, sql := range sqls[1] {
+		q, _ := NewQuery4Audit(sql)
+		rule := q.RuleStarAlias()
+		if rule.Item != "OK" {
+			t.Error("Rule not match:", rule.Item, "Expect : OK")
 		}
 	}
 	common.Log.Debug("Exiting function: %s", common.GetFunctionName())
@@ -792,10 +806,13 @@ func TestRuleUpdateSetAnd(t *testing.T) {
 	common.Log.Debug("Entering function: %s", common.GetFunctionName())
 	sqls := [][]string{
 		{
-			"update tbl set col = 1 and cl = 2 where col=3;",
+			"update tbl set col = 1 AND cl = 2 where col=3;",
+			"update table1 set a = ( select a from table2 where b=1 and c=2) and b=1 where d=2",
 		},
 		{
 			"update tbl set col = 1 ,cl = 2 where col=3;",
+			// https://github.com/sjatsh/soar/issues/226
+			"update table1 set a = ( select a from table2 where b=1 and c=2), b=1, c=2 where d=2",
 		},
 	}
 	for _, sql := range sqls[0] {
@@ -954,7 +971,7 @@ func TestRuleMultiCompare(t *testing.T) {
 		},
 		{
 			"SELECT * FROM tbl WHERE col = 'abc'",
-			// https://github.com/XiaoMi/soar/issues/169
+			// https://github.com/sjatsh/soar/issues/169
 			"SELECT * FROM tbl WHERE col = 'abc' and c = 1",
 			"update tb set c = 1 where a = 2 and b = 3",
 			"delete from tb where a = 2 and b = 3",
@@ -982,6 +999,111 @@ func TestRuleMultiCompare(t *testing.T) {
 			}
 		} else {
 			t.Error("sqlparser.Parse Error:", err)
+		}
+	}
+	common.Log.Debug("Exiting function: %s", common.GetFunctionName())
+}
+
+// RES.010
+func TestRuleCreateOnUpdate(t *testing.T) {
+	common.Log.Debug("Entering function: %s", common.GetFunctionName())
+	sqls := [][]string{
+		{
+			`CREATE TABLE category (
+  category_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(25) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY  (category_id)
+)`,
+		},
+		{
+			`CREATE TABLE category (
+  category_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(25) NOT NULL,
+  last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY  (category_id)
+)`,
+		},
+	}
+
+	for _, sql := range sqls[0] {
+		q, err := NewQuery4Audit(sql)
+		if err == nil {
+			rule := q.RuleCreateOnUpdate()
+			if rule.Item != "RES.010" {
+				t.Error("Rule not match:", rule.Item, "Expect : RES.010, SQL: ", sql)
+			}
+		} else {
+			t.Error("sqlparser.Parse Error:", err)
+		}
+	}
+
+	for _, sql := range sqls[1] {
+		q, err := NewQuery4Audit(sql)
+		if err == nil {
+			rule := q.RuleCreateOnUpdate()
+			if rule.Item != "OK" {
+				t.Error("Rule not match:", rule.Item, "Expect : OK, SQL: ", sql)
+			}
+		} else {
+			t.Error("sqlparser.Parse Error:", err)
+		}
+	}
+	common.Log.Debug("Exiting function: %s", common.GetFunctionName())
+}
+
+// RES.011
+func TestRuleUpdateOnUpdate(t *testing.T) {
+	common.Log.Debug("Entering function: %s", common.GetFunctionName())
+	sqls := [][]string{
+		{
+			`UPDATE category SET name='ActioN' WHERE category_id=1`,
+		},
+		{
+			`select * from film limit 1`,
+			"UPDATE category SET name='ActioN', last_update=last_update WHERE category_id=1",
+		},
+	}
+
+	for _, sql := range sqls[0] {
+		vEnv.BuildVirtualEnv(rEnv, sql)
+		stmt, syntaxErr := sqlparser.Parse(sql)
+		if syntaxErr != nil {
+			t.Error(syntaxErr)
+		}
+
+		q := &Query4Audit{Query: sql, Stmt: stmt}
+		idxAdvisor, err := NewAdvisor(vEnv, *rEnv, *q)
+		if err != nil {
+			t.Error("NewAdvisor Error: ", err, "SQL: ", sql)
+		}
+
+		if idxAdvisor != nil {
+			rule := idxAdvisor.RuleUpdateOnUpdate()
+			if rule.Item != "RES.011" {
+				t.Error("Rule not match:", rule.Item, "Expect : RES.011, SQL:", sql)
+			}
+		}
+	}
+
+	for _, sql := range sqls[1] {
+		vEnv.BuildVirtualEnv(rEnv, sql)
+		stmt, syntaxErr := sqlparser.Parse(sql)
+		if syntaxErr != nil {
+			t.Error(syntaxErr)
+		}
+
+		q := &Query4Audit{Query: sql, Stmt: stmt}
+		idxAdvisor, err := NewAdvisor(vEnv, *rEnv, *q)
+		if err != nil {
+			t.Error("NewAdvisor Error: ", err, "SQL: ", sql)
+		}
+
+		if idxAdvisor != nil {
+			rule := idxAdvisor.RuleUpdateOnUpdate()
+			if rule.Item != "OK" {
+				t.Error("Rule not match:", rule.Item, "Expect : OK, SQL:", sql)
+			}
 		}
 	}
 	common.Log.Debug("Exiting function: %s", common.GetFunctionName())
@@ -1840,15 +1962,32 @@ func TestRuleMultiDBJoin(t *testing.T) {
 // ARG.008
 func TestRuleORUsage(t *testing.T) {
 	common.Log.Debug("Entering function: %s", common.GetFunctionName())
-	sqls := []string{
-		`SELECT c1,c2,c3 FROM tab WHERE c1 = 14 OR c2 = 17;`,
+	sqls := [][]string{
+		{
+			`SELECT c1,c2,c3 FROM tab WHERE c1 = 14 OR c1 = 14;`,
+		},
+		{
+			`SELECT c1,c2,c3 FROM tab WHERE c1 = 14 OR c2 = 17;`,
+			`SELECT c1,c2,c3 FROM tab WHERE c1 = 14 OR c1 IS NULL;`,
+		},
 	}
-	for _, sql := range sqls {
+	for _, sql := range sqls[0] {
 		q, err := NewQuery4Audit(sql)
 		if err == nil {
 			rule := q.RuleORUsage()
 			if rule.Item != "ARG.008" {
 				t.Error("Rule not match:", rule.Item, "Expect : ARG.008")
+			}
+		} else {
+			t.Error("sqlparser.Parse Error:", err)
+		}
+	}
+	for _, sql := range sqls[1] {
+		q, err := NewQuery4Audit(sql)
+		if err == nil {
+			rule := q.RuleORUsage()
+			if rule.Item != "OK" {
+				t.Error("Rule not match:", rule.Item, "Expect : OK")
 			}
 		} else {
 			t.Error("sqlparser.Parse Error:", err)
@@ -1866,6 +2005,7 @@ func TestRuleSpaceWithQuote(t *testing.T) {
 			`SELECT ' a';`,
 			`SELECT "a ";`,
 			`SELECT " a";`,
+			`create table tb ( a varchar(10) default ' ');`,
 		},
 		{
 			`select ''`,
@@ -2016,6 +2156,44 @@ func TestRuleInsertValues(t *testing.T) {
 	common.Log.Debug("Exiting function: %s", common.GetFunctionName())
 }
 
+// ARG.013
+func TestRuleFullWidthQuote(t *testing.T) {
+	common.Log.Debug("Entering function: %s", common.GetFunctionName())
+	sqls := [][]string{
+		{
+			`CREATE TABLE tb (a varchar(10) default '“”')`,
+			`CREATE TABLE tb (a varchar(10) default '‘’')`,
+			`ALTER TABLE tb ADD COLUMN a VARCHAR(10) DEFAULT "“”"`,
+		},
+		{
+			`CREATE TABLE tb (a varchar(10) default '""')`,
+		},
+	}
+	for _, sql := range sqls[0] {
+		q, err := NewQuery4Audit(sql)
+		if err == nil {
+			rule := q.RuleFullWidthQuote()
+			if rule.Item != "ARG.013" {
+				t.Error("Rule not match:", rule.Item, "Expect : ARG.013")
+			}
+		} else {
+			t.Error("sqlparser.Parse Error:", err)
+		}
+	}
+	for _, sql := range sqls[1] {
+		q, err := NewQuery4Audit(sql)
+		if err == nil {
+			rule := q.RuleFullWidthQuote()
+			if rule.Item != "OK" {
+				t.Error("Rule not match:", rule.Item, "Expect : OK")
+			}
+		} else {
+			t.Error("sqlparser.Parse Error:", err)
+		}
+	}
+	common.Log.Debug("Exiting function: %s", common.GetFunctionName())
+}
+
 // SUB.002
 func TestRuleUNIONUsage(t *testing.T) {
 	common.Log.Debug("Entering function: %s", common.GetFunctionName())
@@ -2130,6 +2308,44 @@ func TestRuleSubQueryFunctions(t *testing.T) {
 	common.Log.Debug("Exiting function: %s", common.GetFunctionName())
 }
 
+// SUB.007
+func TestRuleUNIONLimit(t *testing.T) {
+	common.Log.Debug("Entering function: %s", common.GetFunctionName())
+	sqls := [][]string{
+		{
+			`(SELECT * FROM tb1 ORDER BY name) UNION ALL (SELECT * FROM tb2 ORDER BY name) LIMIT 20;`,
+			`(SELECT * FROM tb1 ORDER BY name LIMIT 20) UNION ALL (SELECT * FROM tb2 ORDER BY name) LIMIT 20;`,
+			`(SELECT * FROM tb1 ORDER BY name) UNION ALL (SELECT * FROM tb2 ORDER BY name LIMIT 20) LIMIT 20;`,
+		},
+		{
+			`(SELECT * FROM tb1 ORDER BY name LIMIT 20) UNION ALL (SELECT * FROM tb2 ORDER BY name LIMIT 20) LIMIT 20;`,
+		},
+	}
+	for _, sql := range sqls[0] {
+		q, err := NewQuery4Audit(sql)
+		if err == nil {
+			rule := q.RuleUNIONLimit()
+			if rule.Item != "SUB.007" {
+				t.Error("Rule not match:", rule.Item, "Expect : SUB.007")
+			}
+		} else {
+			t.Error("sqlparser.Parse Error:", err)
+		}
+	}
+	for _, sql := range sqls[1] {
+		q, err := NewQuery4Audit(sql)
+		if err == nil {
+			rule := q.RuleUNIONLimit()
+			if rule.Item != "OK" {
+				t.Error("Rule not match:", rule.Item, "Expect : OK")
+			}
+		} else {
+			t.Error("sqlparser.Parse Error:", err)
+		}
+	}
+	common.Log.Debug("Exiting function: %s", common.GetFunctionName())
+}
+
 // SEC.002
 func TestRuleReadablePasswords(t *testing.T) {
 	common.Log.Debug("Entering function: %s", common.GetFunctionName())
@@ -2166,6 +2382,45 @@ func TestRuleDataDrop(t *testing.T) {
 			rule := q.RuleDataDrop()
 			if rule.Item != "SEC.003" {
 				t.Error("Rule not match:", rule.Item, "Expect : SEC.003")
+			}
+		} else {
+			t.Error("sqlparser.Parse Error:", err)
+		}
+	}
+	common.Log.Debug("Exiting function: %s", common.GetFunctionName())
+}
+
+// SEC.004
+func TestRuleInjection(t *testing.T) {
+	common.Log.Debug("Entering function: %s", common.GetFunctionName())
+	sqls := [][]string{
+		{
+			`select benchmark(10, rand())`,
+			`select sleep(1)`,
+			`select get_lock('lock_name', 1)`,
+			`select release_lock('lock_name')`,
+		},
+		{
+			"select * from `sleep`",
+		},
+	}
+	for _, sql := range sqls[0] {
+		q, err := NewQuery4Audit(sql)
+		if err == nil {
+			rule := q.RuleInjection()
+			if rule.Item != "SEC.004" {
+				t.Error("Rule not match:", rule.Item, "Expect : SEC.004")
+			}
+		} else {
+			t.Error("sqlparser.Parse Error:", err)
+		}
+	}
+	for _, sql := range sqls[1] {
+		q, err := NewQuery4Audit(sql)
+		if err == nil {
+			rule := q.RuleInjection()
+			if rule.Item != "OK" {
+				t.Error("Rule not match:", rule.Item, "Expect : OK")
 			}
 		} else {
 			t.Error("sqlparser.Parse Error:", err)
@@ -2713,6 +2968,9 @@ func TestRuleTimestampDefault(t *testing.T) {
 		{
 			"CREATE TABLE tbl( `id` bigint not null, `create_time` timestamp) ENGINE=InnoDB DEFAULT CHARSET=utf8;",
 			"ALTER TABLE t1 MODIFY b timestamp NOT NULL;",
+			`ALTER TABLE t1 ADD c_time timestamp NOT NULL default "0000-00-00"`,
+			`ALTER TABLE t1 ADD c_time timestamp NOT NULL default 0`,
+			`ALTER TABLE t1 ADD c_time datetime NOT NULL default 0`,
 		},
 		{
 			"CREATE TABLE tbl (`id` bigint not null, `update_time` timestamp default current_timestamp)",
@@ -2794,6 +3052,8 @@ func TestRuleColumnWithCharset(t *testing.T) {
 		{
 			"CREATE TABLE `tb2` ( `id` int(11) DEFAULT NULL, `col` char(10) CHARACTER SET utf8 DEFAULT NULL)",
 			"alter table tb2 change col col char(10) CHARACTER SET utf8 DEFAULT NULL;",
+			"CREATE TABLE tb (a nvarchar(10))",
+			"CREATE TABLE tb (a nchar(10))",
 		},
 		// 反面的例子
 		{
@@ -3409,6 +3669,7 @@ func TestRuleStandardName(t *testing.T) {
 			"CREATE TABLE `tbl-name` (a int);",
 			"CREATE TABLE `tbl `(a int)",
 			"CREATE TABLE t__bl (a int);",
+			"SELECT `dataType` FROM tb;",
 		},
 		{
 			"CREATE TABLE tbl (a int)",

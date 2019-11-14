@@ -1,8 +1,36 @@
 # CHANGELOG
 
+## 2019-08
+- Fix RuleImplicitConversion(ARG.003) with INT and DECIMAL
+- Fix RuleImplicitConversion duplicate suggest when use IN () operator
+
+## 2019-07
+- Fix #213 CLA.001 NO WHERE CONDITION
+- Fix PRIMARY key append to multi column index
+- fingerprint verbose mode add id
+
+## 2019-05
+- Fix issue #208 14c19f4 regression bug
+- Add max_execution_time hint for explain query
+- Fix #205 create index rewrite error
+
+## 2019-04
+- Add test case for STA.004
+- RuleSpaceWithQuote add list range check
+- Fix #199 -report-type=json add score
+- Fix #98 JSON result format
+- Fix index col compare case sensitive bug
+- Fix ARG.008 cases: col = 1 OR col IS NULL
+- Fix tokenize bug with multi type of quote
+
+## 2019-02
+- add go.mod for go1.11
+- add new -report-type query-type
+- add new heuristic rule SEC.004
+- fix #196 wrong ip/password will cause soar -check-config hangup
+
 ## 2019-01
 
-- DOING: english translation
 - add mysql environment verbose info
 - add JSONFind function, which support JSON iterate
 - add new test database `world_x`

@@ -29,7 +29,7 @@ drop-test-temporary: true
 only-syntax-check: false
 sampling-statistic-target: 100
 sampling: false
-# 日志级别，[0:Emergency, 1:Alert, 2:Critical, 3:Error, 4:Warning, 5:Notice, 6:Informational, 7:Debug]
+# 日志级别，[0:Emergency, 1:Alert, 2:Warn, 3:Error, 4:Warning, 5:Notice, 6:Informational, 7:Debug]
 log-level: 7
 log-output: ${your_log_dir}/soar.log
 # 优化建议输出格式

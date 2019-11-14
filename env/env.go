@@ -21,9 +21,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/XiaoMi/soar/ast"
-	"github.com/XiaoMi/soar/common"
-	"github.com/XiaoMi/soar/database"
+	"github.com/sjatsh/soar/ast"
+	"github.com/sjatsh/soar/common"
+	"github.com/sjatsh/soar/database"
 
 	"github.com/dchest/uniuri"
 	"vitess.io/vitess/go/vt/sqlparser"
@@ -192,6 +192,39 @@ func (vEnv *VirtualEnv) CleanupTestDatabase() {
 	err = dbs.Rows.Close()
 	common.LogIfError(err, "")
 	common.Log.Debug("CleanupTestDatabase done")
+}
+
+// ChangeDB use db change dsn Database
+func ChangeDB(env *database.Connector, sql string) {
+	stmt, err := sqlparser.Parse(sql)
+	if err != nil {
+		return
+	}
+
+	switch stmt := stmt.(type) {
+	case *sqlparser.Use:
+		if stmt.DBName.String() != "" {
+			env.Database = stmt.DBName.String()
+		}
+	}
+}
+
+func CurrentDB(sql, db string) string {
+	stmt, err := sqlparser.Parse(sql)
+	if err != nil {
+		return common.Config.TestDSN.Schema
+	}
+
+	switch stmt := stmt.(type) {
+	case *sqlparser.Use:
+		if stmt.DBName.String() != "" {
+			db = stmt.DBName.String()
+		}
+	}
+	if db == "" {
+		db = common.Config.TestDSN.Schema
+	}
+	return db
 }
 
 // BuildVirtualEnv rEnv 为 SQL 源环境，DB 使用的信息从接口获取

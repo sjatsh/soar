@@ -21,7 +21,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/XiaoMi/soar/common"
+	"github.com/sjatsh/soar/common"
 )
 
 func TestRewrite(t *testing.T) {
@@ -631,6 +631,7 @@ func TestMergeAlterTables(t *testing.T) {
 		// ADD|DROP INDEX
 		// TODO: PRIMARY KEY, [UNIQUE|FULLTEXT|SPATIAL] INDEX
 		"CREATE INDEX part_of_name ON customer (name(10));",
+		"create index idx_test_cca on test_bb(test_cc);", // https://github.com/sjatsh/soar/issues/205
 		"alter table `sakila`.`t1` add index `idx_col`(`col`)",
 		"alter table `sakila`.`t1` add UNIQUE index `idx_col`(`col`)",
 		"alter table `sakila`.`t1` add index `idx_ID`(`ID`)",
@@ -659,7 +660,7 @@ func TestMergeAlterTables(t *testing.T) {
 
 		// table name quote in back ticks
 		"alter table `t3`add index `idx_a`(a)",
-		"alter table`t3`drop index`idx_b`(b)",
+		"alter table`t3`drop index`idx_b`",
 	}
 
 	alterSQLs := MergeAlterTables(sqls...)

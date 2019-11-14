@@ -20,15 +20,21 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
+	"runtime"
 	"testing"
 
-	"github.com/XiaoMi/soar/common"
+	"github.com/sjatsh/soar/common"
 )
 
 var update = flag.Bool("update", false, "update .golden files")
 
 func TestMain(m *testing.M) {
 	// 初始化 init
+	if common.DevPath == "" {
+		_, file, _, _ := runtime.Caller(0)
+		common.DevPath, _ = filepath.Abs(filepath.Dir(filepath.Join(file, ".."+string(filepath.Separator))))
+	}
 	common.BaseDir = common.DevPath
 	err := common.ParseConfig("")
 	common.LogIfError(err, "init ParseConfig")
@@ -63,7 +69,7 @@ func Test_Main_More(_ *testing.T) {
 	orgRerportType := common.Config.ReportType
 	for _, typ := range []string{
 		"json", "html", "markdown", "fingerprint", "compress", "pretty", "rewrite",
-		"ast", "tiast", "ast-json", "tiast-json", "tokenize", "lint",
+		"ast", "tiast", "ast-json", "tiast-json", "tokenize", "lint", "tables", "query-type",
 	} {
 		common.Config.ReportType = typ
 		main()

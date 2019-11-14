@@ -14,11 +14,13 @@
 package memory
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/terror"
-	log "github.com/sirupsen/logrus"
+	"github.com/pingcap/tidb/util/logutil"
+	"go.uber.org/zap"
 )
 
 // ActionOnExceed is the action taken when memory usage exceeds memory quota.
@@ -27,12 +29,25 @@ type ActionOnExceed interface {
 	// Action will be called when memory usage exceeds memory quota by the
 	// corresponding Tracker.
 	Action(t *Tracker)
+	// SetLogHook binds a log hook which will be triggered and log an detailed
+	// message for the out-of-memory sql.
+	SetLogHook(hook func(uint64))
+	// SetFallback sets a fallback action which will be triggered if itself has
+	// already been triggered.
+	SetFallback(a ActionOnExceed)
 }
 
 // LogOnExceed logs a warning only once when memory usage exceeds memory quota.
 type LogOnExceed struct {
-	mutex sync.Mutex // For synchronization.
-	acted bool
+	mutex   sync.Mutex // For synchronization.
+	acted   bool
+	ConnID  uint64
+	logHook func(uint64)
+}
+
+// SetLogHook sets a hook for LogOnExceed.
+func (a *LogOnExceed) SetLogHook(hook func(uint64)) {
+	a.logHook = hook
 }
 
 // Action logs a warning only once when memory usage exceeds memory quota.
@@ -41,14 +56,29 @@ func (a *LogOnExceed) Action(t *Tracker) {
 	defer a.mutex.Unlock()
 	if !a.acted {
 		a.acted = true
-		log.Warnf(errMemExceedThreshold.GenWithStackByArgs(t.label, t.BytesConsumed(), t.bytesLimit, t.String()).Error())
+		if a.logHook == nil {
+			logutil.BgLogger().Warn("memory exceeds quota",
+				zap.Error(errMemExceedThreshold.GenWithStackByArgs(t.label, t.BytesConsumed(), t.bytesLimit, t.String())))
+			return
+		}
+		a.logHook(a.ConnID)
 	}
 }
 
+// SetFallback sets a fallback action.
+func (a *LogOnExceed) SetFallback(ActionOnExceed) {}
+
 // PanicOnExceed panics when memory usage exceeds memory quota.
 type PanicOnExceed struct {
-	mutex sync.Mutex // For synchronization.
-	acted bool
+	mutex   sync.Mutex // For synchronization.
+	acted   bool
+	ConnID  uint64
+	logHook func(uint64)
+}
+
+// SetLogHook sets a hook for PanicOnExceed.
+func (a *PanicOnExceed) SetLogHook(hook func(uint64)) {
+	a.logHook = hook
 }
 
 // Action panics when memory usage exceeds memory quota.
@@ -60,8 +90,14 @@ func (a *PanicOnExceed) Action(t *Tracker) {
 	}
 	a.acted = true
 	a.mutex.Unlock()
-	panic(PanicMemoryExceed + t.String())
+	if a.logHook != nil {
+		a.logHook(a.ConnID)
+	}
+	panic(PanicMemoryExceed + fmt.Sprintf("[conn_id=%d]", a.ConnID))
 }
+
+// SetFallback sets a fallback action.
+func (a *PanicOnExceed) SetFallback(ActionOnExceed) {}
 
 var (
 	errMemExceedThreshold = terror.ClassExecutor.New(codeMemExceedThreshold, mysql.MySQLErrName[mysql.ErrMemExceedThreshold])

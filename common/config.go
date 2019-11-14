@@ -32,7 +32,7 @@ import (
 	"time"
 
 	"github.com/go-sql-driver/mysql"
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 )
 
 var (
@@ -67,7 +67,7 @@ type Configuration struct {
 
 	// +++++++++++++++日志相关+++++++++++++++++
 	// 日志级别，这里使用了 beego 的 log 包
-	// [0:Emergency, 1:Alert, 2:Critical, 3:Error, 4:Warning, 5:Notice, 6:Informational, 7:Debug]
+	// [0:Emergency, 1:Alert, 2:Warn, 3:Error, 4:Warning, 5:Notice, 6:Informational, 7:Debug]
 	LogLevel int `yaml:"log-level"`
 	// 日志输出位置，默认日志输出到控制台
 	// 目前只支持['console', 'file']两种形式，如非console形式这里需要指定文件的路径，可以是相对路径
@@ -121,7 +121,7 @@ type Configuration struct {
 	ExplainWarnAccessType  []string `yaml:"explain-warn-access-type"` // 哪些 access type 不建议使用
 	ExplainMaxKeyLength    int      `yaml:"explain-max-keys"`         // 最大 key_len
 	ExplainMinPossibleKeys int      `yaml:"explain-min-keys"`         // 最小 possible_keys 警告
-	ExplainMaxRows         int      `yaml:"explain-max-rows"`         // 最大扫描行数警告
+	ExplainMaxRows         int64    `yaml:"explain-max-rows"`         // 最大扫描行数警告
 	ExplainWarnExtra       []string `yaml:"explain-warn-extra"`       // 哪些 extra 信息会给警告
 	ExplainMaxFiltered     float64  `yaml:"explain-max-filtered"`     // filtered 大于该配置给出警告
 	ExplainWarnScalability []string `yaml:"explain-warn-scalability"` // 复杂度警告名单
@@ -238,9 +238,9 @@ type Dsn struct {
 	ServerPubKey     string            `yaml:"server-public-key"`  // Server public key name
 	MaxAllowedPacket int               `ymal:"max-allowed-packet"` // Max packet size allowed
 	Params           map[string]string `yaml:"params"`             // Other Connection parameters, `SET param=val`, `SET NAMES charset`
-	Timeout          int               `yaml:"timeout"`            // Dial timeout
-	ReadTimeout      int               `yaml:"read-timeout"`       // I/O read timeout
-	WriteTimeout     int               `yaml:"write-timeout"`      // I/O write timeout
+	Timeout          string            `yaml:"timeout"`            // Dial timeout
+	ReadTimeout      string            `yaml:"read-timeout"`       // I/O read timeout
+	WriteTimeout     string            `yaml:"write-timeout"`      // I/O write timeout
 
 	AllowNativePasswords bool `yaml:"allow-native-passwords"` // Allows the native password authentication method
 	AllowOldPasswords    bool `yaml:"allow-old-passwords"`    // Allows the old insecure password method
@@ -255,6 +255,7 @@ func newDSN(cfg *mysql.Config) *Dsn {
 		Net:                  "tcp",
 		Schema:               "information_schema",
 		Charset:              "utf8",
+		Timeout:              "3s",
 		AllowNativePasswords: true,
 		Params:               make(map[string]string),
 		MaxAllowedPacket:     4 << 20, // 4 MiB
@@ -282,16 +283,16 @@ func newDSN(cfg *mysql.Config) *Dsn {
 	dsn.MaxAllowedPacket = cfg.MaxAllowedPacket
 	dsn.ServerPubKey = cfg.ServerPubKey
 	dsn.TLS = cfg.TLSConfig
-	dsn.Timeout = int(cfg.Timeout / time.Second)
-	dsn.ReadTimeout = int(cfg.ReadTimeout / time.Second)
-	dsn.WriteTimeout = int(cfg.WriteTimeout / time.Second)
+	dsn.Timeout = cfg.Timeout.String()
+	dsn.ReadTimeout = cfg.ReadTimeout.String()
+	dsn.WriteTimeout = cfg.WriteTimeout.String()
 	dsn.AllowNativePasswords = cfg.AllowNativePasswords
 	dsn.AllowOldPasswords = cfg.AllowOldPasswords
 	return dsn
 }
 
 // newMySQLConfig convert Dsn to go-sql-drive Config
-func (env *Dsn) newMySQLConifg() (*mysql.Config, error) {
+func (env *Dsn) newMySQLConfig() (*mysql.Config, error) {
 	var err error
 	dsn := mysql.NewConfig()
 
@@ -313,9 +314,18 @@ func (env *Dsn) newMySQLConifg() (*mysql.Config, error) {
 	dsn.MaxAllowedPacket = env.MaxAllowedPacket
 	dsn.ServerPubKey = env.ServerPubKey
 	dsn.TLSConfig = env.TLS
-	dsn.Timeout = time.Duration(env.Timeout) * time.Second
-	dsn.ReadTimeout = time.Duration(env.ReadTimeout) * time.Second
-	dsn.WriteTimeout = time.Duration(env.WriteTimeout) * time.Second
+	if env.Timeout != "" {
+		dsn.Timeout, err = time.ParseDuration(env.Timeout)
+		LogIfError(err, "timeout: '%s'", env.Timeout)
+	}
+	if env.WriteTimeout != "" {
+		dsn.WriteTimeout, err = time.ParseDuration(env.WriteTimeout)
+		LogIfError(err, "writeTimeout: '%s'", env.WriteTimeout)
+	}
+	if env.ReadTimeout != "" {
+		dsn.ReadTimeout, err = time.ParseDuration(env.ReadTimeout)
+		LogIfError(err, "readTimeout: '%s'", env.ReadTimeout)
+	}
 	dsn.AllowNativePasswords = env.AllowNativePasswords
 	dsn.AllowOldPasswords = env.AllowOldPasswords
 	return dsn, err
@@ -324,7 +334,7 @@ func (env *Dsn) newMySQLConifg() (*mysql.Config, error) {
 // 解析命令行DSN输入
 func parseDSN(odbc string, d *Dsn) *Dsn {
 	dsn := newDSN(nil)
-	var addr, user, password, schema, charset string
+	var addr, user, password, schema, charset, timeout string
 	if odbc == FormatDSN(d) {
 		return d
 	}
@@ -336,6 +346,7 @@ func parseDSN(odbc string, d *Dsn) *Dsn {
 		password = d.Password
 		schema = d.Schema
 		charset = d.Charset
+		timeout = d.Timeout
 	}
 
 	// 设置为空表示禁用环境
@@ -398,6 +409,8 @@ func parseDSN(odbc string, d *Dsn) *Dsn {
 				switch arg {
 				case "charset":
 					charset = val
+				case "timeout":
+					timeout = val
 				default:
 				}
 			}
@@ -414,11 +427,17 @@ func parseDSN(odbc string, d *Dsn) *Dsn {
 		charset = "utf8"
 	}
 
+	// 默认连接数据库超时时间 3s
+	if timeout == "" {
+		timeout = "3s"
+	}
+
 	dsn.Addr = addr
 	dsn.User = user
 	dsn.Password = password
 	dsn.Schema = schema
 	dsn.Charset = charset
+	dsn.Timeout = timeout
 	return dsn
 }
 
@@ -437,7 +456,7 @@ func FormatDSN(env *Dsn) string {
 	if env == nil || env.Disable {
 		return ""
 	}
-	dsn, err := env.newMySQLConifg()
+	dsn, err := env.newMySQLConfig()
 	if err != nil {
 		return ""
 	}
@@ -578,7 +597,7 @@ func readCmdFlags() error {
 	delimiter := flag.String("delimiter", Config.Delimiter, "Delimiter, SQL分隔符")
 	minCardinality := flag.Float64("min-cardinality", Config.MinCardinality, "MinCardinality，索引列散粒度最低阈值，散粒度低于该值的列不添加索引，建议范围0.0 ~ 100.0")
 	// +++++++++++++++日志相关+++++++++++++++++
-	logLevel := flag.Int("log-level", Config.LogLevel, "LogLevel, 日志级别, [0:Emergency, 1:Alert, 2:Critical, 3:Error, 4:Warning, 5:Notice, 6:Informational, 7:Debug]")
+	logLevel := flag.Int("log-level", Config.LogLevel, "LogLevel, 日志级别, [0:Emergency, 1:Alert, 2:Warn, 3:Error, 4:Warning, 5:Notice, 6:Informational, 7:Debug]")
 	logOutput := flag.String("log-output", Config.LogOutput, "LogOutput, 日志输出位置")
 	reportType := flag.String("report-type", Config.ReportType, "ReportType, 优化建议输出格式，目前支持: json, text, markdown, html等")
 	reportCSS := flag.String("report-css", Config.ReportCSS, "ReportCSS, 当 ReportType 为 html 格式时使用的 css 风格，如不指定会提供一个默认风格。CSS可以是本地文件，也可以是一个URL")
@@ -622,7 +641,7 @@ func readCmdFlags() error {
 	explainWarnAccessType := flag.String("explain-warn-access-type", strings.Join(Config.ExplainWarnAccessType, ","), "ExplainWarnAccessType, 哪些access type不建议使用")
 	explainMaxKeyLength := flag.Int("explain-max-keys", Config.ExplainMaxKeyLength, "ExplainMaxKeyLength, 最大key_len")
 	explainMinPossibleKeys := flag.Int("explain-min-keys", Config.ExplainMinPossibleKeys, "ExplainMinPossibleKeys, 最小possible_keys警告")
-	explainMaxRows := flag.Int("explain-max-rows", Config.ExplainMaxRows, "ExplainMaxRows, 最大扫描行数警告")
+	explainMaxRows := flag.Int64("explain-max-rows", Config.ExplainMaxRows, "ExplainMaxRows, 最大扫描行数警告")
 	explainWarnExtra := flag.String("explain-warn-extra", strings.Join(Config.ExplainWarnExtra, ","), "ExplainWarnExtra, 哪些extra信息会给警告")
 	explainMaxFiltered := flag.Float64("explain-max-filtered", Config.ExplainMaxFiltered, "ExplainMaxFiltered, filtered大于该配置给出警告")
 	explainWarnScalability := flag.String("explain-warn-scalability", strings.Join(Config.ExplainWarnScalability, ","), "ExplainWarnScalability, 复杂度警告名单, 支持O(n),O(log n),O(1),O(?)")
@@ -669,6 +688,9 @@ func readCmdFlags() error {
 	}
 
 	Config.ReportType = strings.ToLower(*reportType)
+	if Config.ReportType == "tables" && Config.TestDSN.Schema == "information_schema" {
+		Config.TestDSN.Schema = "unknown"
+	}
 	Config.ReportCSS = *reportCSS
 	Config.ReportJavascript = *reportJavascript
 	Config.ReportTitle = *reportTitle
@@ -809,7 +831,6 @@ func ParseConfig(configFile string) error {
 		}
 		defer blFd.Close()
 	}
-	LoggerInit()
 	return err
 }
 
@@ -843,9 +864,29 @@ var ReportTypes = []ReportType{
 		Example:     `echo "select * from film" | soar -report-type ast`,
 	},
 	{
+		Name:        "ast-json",
+		Description: "以 JSON 格式输出 SQL 的抽象语法树，主要用于测试",
+		Example:     `echo "select * from film" | soar -report-type ast-json`,
+	},
+	{
 		Name:        "tiast",
 		Description: "输出 SQL 的 TiDB抽象语法树，主要用于测试",
 		Example:     `echo "select * from film" | soar -report-type tiast`,
+	},
+	{
+		Name:        "tiast-json",
+		Description: "以 JSON 格式输出 SQL 的 TiDB抽象语法树，主要用于测试",
+		Example:     `echo "select * from film" | soar -report-type tiast-json`,
+	},
+	{
+		Name:        "tables",
+		Description: "以 JSON 格式输出 SQL 使用的库表名",
+		Example:     `echo "select * from film" | soar -report-type tables`,
+	},
+	{
+		Name:        "query-type",
+		Description: "SQL 语句的请求类型",
+		Example:     `echo "select * from film" | soar -report-type query-type`,
 	},
 	{
 		Name:        "fingerprint",

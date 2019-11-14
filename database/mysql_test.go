@@ -20,9 +20,11 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
+	"runtime"
 	"testing"
 
-	"github.com/XiaoMi/soar/common"
+	"github.com/sjatsh/soar/common"
 
 	"github.com/kr/pretty"
 )
@@ -32,18 +34,22 @@ var update = flag.Bool("update", false, "update .golden files")
 
 func TestMain(m *testing.M) {
 	// 初始化 init
+	if common.DevPath == "" {
+		_, file, _, _ := runtime.Caller(0)
+		common.DevPath, _ = filepath.Abs(filepath.Dir(filepath.Join(file, ".."+string(filepath.Separator))))
+	}
 	common.BaseDir = common.DevPath
 	err := common.ParseConfig("")
 	common.LogIfError(err, "init ParseConfig")
 	common.Log.Debug("mysql_test init")
 	connTest, err = NewConnector(common.Config.TestDSN)
 	if err != nil {
-		common.Log.Critical("Test env Error: %v", err)
+		common.Log.Warn("Test env Error: %v", err)
 		os.Exit(0)
 	}
 
 	if _, err := connTest.Version(); err != nil {
-		common.Log.Critical("Test env Error: %v", err)
+		common.Log.Warn("Test env Error: %v", err)
 		os.Exit(0)
 	}
 

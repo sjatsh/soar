@@ -20,12 +20,14 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
-	"github.com/XiaoMi/soar/common"
-	"github.com/XiaoMi/soar/database"
-	"github.com/XiaoMi/soar/env"
+	"github.com/sjatsh/soar/common"
+	"github.com/sjatsh/soar/database"
+	"github.com/sjatsh/soar/env"
 
 	"github.com/kr/pretty"
 	"vitess.io/vitess/go/vt/sqlparser"
@@ -37,6 +39,10 @@ var rEnv *database.Connector
 
 func TestMain(m *testing.M) {
 	// 初始化 init
+	if common.DevPath == "" {
+		_, file, _, _ := runtime.Caller(0)
+		common.DevPath, _ = filepath.Abs(filepath.Dir(filepath.Join(file, ".."+string(filepath.Separator))))
+	}
 	common.BaseDir = common.DevPath
 	err := common.ParseConfig("")
 	common.LogIfError(err, "init ParseConfig")
@@ -83,17 +89,19 @@ func TestRuleImplicitConversion(t *testing.T) {
 			"SELECT * FROM t1, t3 WHERE t1.title = t3.title;",
 			"SELECT * FROM t1 WHERE title in (60, '60');",
 			"SELECT * FROM t1 WHERE title in (60);",
+			"SELECT * FROM t1 WHERE title in (60, 60);",
 			"SELECT * FROM t4 WHERE col = '1'",
 		},
 		{
-			// https://github.com/XiaoMi/soar/issues/151
+			// https://github.com/sjatsh/soar/issues/151
 			"SELECT * FROM t4 WHERE col = 1",
+			"SELECT * FROM sakila.film WHERE rental_rate > 1",
 		},
 	}
 	for _, sql := range sqls[0] {
 		stmt, syntaxErr := sqlparser.Parse(sql)
 		if syntaxErr != nil {
-			common.Log.Critical("Syntax Error: %v, SQL: %s", syntaxErr, sql)
+			common.Log.Warn("Syntax Error: %v, SQL: %s", syntaxErr, sql)
 		}
 
 		q := &Query4Audit{Query: sql, Stmt: stmt}
@@ -113,7 +121,7 @@ func TestRuleImplicitConversion(t *testing.T) {
 	for _, sql := range sqls[1] {
 		stmt, syntaxErr := sqlparser.Parse(sql)
 		if syntaxErr != nil {
-			common.Log.Critical("Syntax Error: %v, SQL: %s", syntaxErr, sql)
+			common.Log.Warn("Syntax Error: %v, SQL: %s", syntaxErr, sql)
 		}
 
 		q := &Query4Audit{Query: sql, Stmt: stmt}
@@ -148,7 +156,7 @@ func TestRuleImpossibleOuterJoin(t *testing.T) {
 	for _, sql := range sqls {
 		stmt, syntaxErr := sqlparser.Parse(sql)
 		if syntaxErr != nil {
-			common.Log.Critical("Syntax Error: %v, SQL: %s", syntaxErr, sql)
+			common.Log.Warn("Syntax Error: %v, SQL: %s", syntaxErr, sql)
 		}
 
 		q := &Query4Audit{Query: sql, Stmt: stmt}
@@ -187,7 +195,7 @@ func TestIndexAdvisorRuleGroupByConst(t *testing.T) {
 	for _, sql := range sqls[0] {
 		stmt, syntaxErr := sqlparser.Parse(sql)
 		if syntaxErr != nil {
-			common.Log.Critical("Syntax Error: %v, SQL: %s", syntaxErr, sql)
+			common.Log.Warn("Syntax Error: %v, SQL: %s", syntaxErr, sql)
 		}
 
 		q := &Query4Audit{Query: sql, Stmt: stmt}
@@ -210,7 +218,7 @@ func TestIndexAdvisorRuleGroupByConst(t *testing.T) {
 	for _, sql := range sqls[1] {
 		stmt, syntaxErr := sqlparser.Parse(sql)
 		if syntaxErr != nil {
-			common.Log.Critical("Syntax Error: %v, SQL: %s", syntaxErr, sql)
+			common.Log.Warn("Syntax Error: %v, SQL: %s", syntaxErr, sql)
 		}
 
 		q := &Query4Audit{Query: sql, Stmt: stmt}
@@ -249,7 +257,7 @@ func TestIndexAdvisorRuleOrderByConst(t *testing.T) {
 	for _, sql := range sqls[0] {
 		stmt, syntaxErr := sqlparser.Parse(sql)
 		if syntaxErr != nil {
-			common.Log.Critical("Syntax Error: %v, SQL: %s", syntaxErr, sql)
+			common.Log.Warn("Syntax Error: %v, SQL: %s", syntaxErr, sql)
 		}
 
 		q := &Query4Audit{Query: sql, Stmt: stmt}
@@ -272,7 +280,7 @@ func TestIndexAdvisorRuleOrderByConst(t *testing.T) {
 	for _, sql := range sqls[1] {
 		stmt, syntaxErr := sqlparser.Parse(sql)
 		if syntaxErr != nil {
-			common.Log.Critical("Syntax Error: %v, SQL: %s", syntaxErr, sql)
+			common.Log.Warn("Syntax Error: %v, SQL: %s", syntaxErr, sql)
 		}
 
 		q := &Query4Audit{Query: sql, Stmt: stmt}
@@ -310,7 +318,7 @@ func TestRuleUpdatePrimaryKey(t *testing.T) {
 	for _, sql := range sqls[0] {
 		stmt, syntaxErr := sqlparser.Parse(sql)
 		if syntaxErr != nil {
-			common.Log.Critical("Syntax Error: %v, SQL: %s", syntaxErr, sql)
+			common.Log.Warn("Syntax Error: %v, SQL: %s", syntaxErr, sql)
 		}
 
 		q := &Query4Audit{Query: sql, Stmt: stmt}
@@ -333,7 +341,7 @@ func TestRuleUpdatePrimaryKey(t *testing.T) {
 	for _, sql := range sqls[1] {
 		stmt, syntaxErr := sqlparser.Parse(sql)
 		if syntaxErr != nil {
-			common.Log.Critical("Syntax Error: %v, SQL: %s", syntaxErr, sql)
+			common.Log.Warn("Syntax Error: %v, SQL: %s", syntaxErr, sql)
 		}
 
 		q := &Query4Audit{Query: sql, Stmt: stmt}
@@ -363,7 +371,7 @@ func TestIndexAdvise(t *testing.T) {
 	for _, sql := range common.TestSQLs {
 		stmt, syntaxErr := sqlparser.Parse(sql)
 		if syntaxErr != nil {
-			common.Log.Critical("Syntax Error: %v, SQL: %s", syntaxErr, sql)
+			common.Log.Warn("Syntax Error: %v, SQL: %s", syntaxErr, sql)
 		}
 
 		q := &Query4Audit{Query: sql, Stmt: stmt}
@@ -394,7 +402,7 @@ func TestIndexAdviseNoEnv(t *testing.T) {
 	for _, sql := range common.TestSQLs {
 		stmt, syntaxErr := sqlparser.Parse(sql)
 		if syntaxErr != nil {
-			common.Log.Critical("Syntax Error: %v, SQL: %s", syntaxErr, sql)
+			common.Log.Warn("Syntax Error: %v, SQL: %s", syntaxErr, sql)
 		}
 
 		q := &Query4Audit{Query: sql, Stmt: stmt}
@@ -459,7 +467,7 @@ func TestIdxColsTypeCheck(t *testing.T) {
 	for _, sql := range sqls {
 		stmt, syntaxErr := sqlparser.Parse(sql)
 		if syntaxErr != nil {
-			common.Log.Critical("Syntax Error: %v, SQL: %s", syntaxErr, sql)
+			common.Log.Warn("Syntax Error: %v, SQL: %s", syntaxErr, sql)
 		}
 
 		q := &Query4Audit{Query: sql, Stmt: stmt}

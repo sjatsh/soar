@@ -17,47 +17,62 @@
 package common
 
 import (
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"runtime"
 	"strings"
-
-	"github.com/astaxie/beego/logs"
 )
 
+type Logger interface {
+	Info(...interface{})
+	Print(...interface{})
+	Debug(...interface{})
+	Warn(...interface{})
+	Warning(...interface{})
+	Error(...interface{})
+}
+
+type LocalLogger struct {
+}
+
+func (*LocalLogger) Info(v ...interface{}) {
+	fmt.Print(v)
+}
+
+func (*LocalLogger) Print(v ...interface{}) {
+	fmt.Print(v)
+}
+
+func (*LocalLogger) Debug(v ...interface{}) {
+	fmt.Print(v)
+}
+
+func (*LocalLogger) Warn(v ...interface{}) {
+	fmt.Print(v)
+}
+
+func (*LocalLogger) Warning(v ...interface{}) {
+	fmt.Print(v)
+}
+
+func (*LocalLogger) Error(v ...interface{}) {
+	fmt.Print(v)
+}
+
 // Log 使用 beego 的 log 库
-var Log *logs.BeeLogger
+var Log Logger
 
 // BaseDir 日志打印在binary的根路径
 var BaseDir string
 
 func init() {
-	Log = logs.NewLogger(0)
-	Log.EnableFuncCallDepth(true)
+	Log = &LocalLogger{}
 }
 
-// LoggerInit Log配置初始化
-func LoggerInit() {
-	Log.SetLevel(Config.LogLevel)
-	func() { _ = Log.DelLogger(logs.AdapterFile) }()
-	logConfig := map[string]interface{}{
-		"filename": Config.LogOutput,
-		"level":    7,
-		"maxlines": 0,
-		"maxsize":  0,
-		"daily":    false,
-		"maxdays":  0,
-	}
-	logConfigJSON, _ := json.Marshal(logConfig)
-	err := Log.SetLogger(logs.AdapterFile, string(logConfigJSON))
-	if err != nil {
-		fmt.Println(err.Error())
-	}
+func SetLogger(l Logger) {
+	Log = l
 }
 
-// Caller returns the caller of the function that called it :)
-// https://stackoverflow.com/questions/35212985/is-it-possible-get-information-about-caller-function-in-golang
 func Caller() string {
 	// we get the callers as uintptrs - but we just need 1
 	fpcs := make([]uintptr, 1)
@@ -105,10 +120,10 @@ func LogIfError(err error, format string, v ...interface{}) {
 		_, fn, line, _ := runtime.Caller(1)
 		if format == "" {
 			format = "[%s:%d] %s"
-			Log.Error(format, fileName(fn), line, err.Error())
+			Log.Print(format, fileName(fn), line, err.Error())
 		} else {
 			format = "[%s:%d] " + format + " Error: %s"
-			Log.Error(format, fileName(fn), line, v, err.Error())
+			Log.Print(format, fileName(fn), line, v, err.Error())
 		}
 	}
 }
@@ -119,10 +134,10 @@ func LogIfWarn(err error, format string, v ...interface{}) {
 		_, fn, line, _ := runtime.Caller(1)
 		if format == "" {
 			format = "[%s:%d] %s"
-			Log.Warn(format, fileName(fn), line, err.Error())
+			Log.Print(format, fileName(fn), line, err.Error())
 		} else {
 			format = "[%s:%d] " + format + " Error: %s"
-			Log.Warn(format, fileName(fn), line, v, err.Error())
+			Log.Print(format, fileName(fn), line, v, err.Error())
 		}
 	}
 }
