@@ -24,13 +24,13 @@ import (
 )
 
 type Logger interface {
-	Print(v ...string)
+	Print(...interface{})
 }
 
 type LocalLogger struct {
 }
 
-func (*LocalLogger) Print(v ...string) {
+func (*LocalLogger) Print(v ...interface{}) {
 	fmt.Print(v)
 }
 
@@ -95,10 +95,10 @@ func LogIfError(err error, format string, v ...interface{}) {
 		_, fn, line, _ := runtime.Caller(1)
 		if format == "" {
 			format = "[%s:%d] %s"
-			Log.Print(format, fileName(fn), fmt.Sprint(line), err.Error())
+			Log.Print(format, fileName(fn), line, err.Error())
 		} else {
 			format = "[%s:%d] " + format + " Error: %s"
-			Log.Print(format, fileName(fn), fmt.Sprint(line), fmt.Sprint(v), err.Error())
+			Log.Print(format, fileName(fn), line, v, err.Error())
 		}
 	}
 }
@@ -109,10 +109,10 @@ func LogIfWarn(err error, format string, v ...interface{}) {
 		_, fn, line, _ := runtime.Caller(1)
 		if format == "" {
 			format = "[%s:%d] %s"
-			Log.Print(format, fileName(fn), fmt.Sprint(line), err.Error())
+			Log.Print(format, fileName(fn), line, err.Error())
 		} else {
 			format = "[%s:%d] " + format + " Error: %s"
-			Log.Print(format, fileName(fn), fmt.Sprint(line), fmt.Sprint(v), err.Error())
+			Log.Print(format, fileName(fn), line, v, err.Error())
 		}
 	}
 }
